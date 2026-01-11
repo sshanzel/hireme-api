@@ -15,6 +15,13 @@
       "when": 1768136767203,
       "tag": "0001_silent_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1768136816916,
+      "tag": "0002_peaceful_yellowjacket",
+      "breakpoints": true
     }
   ]
 }
