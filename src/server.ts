@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
 import type {FastifyInstance, FastifyReply, FastifyRequest} from 'fastify';
-import routes from './routes/index.js';
+import routes from './routes/index.ts';
 
 const fastify: FastifyInstance = Fastify({
   logger: true,

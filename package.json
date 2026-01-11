@@ -7,7 +7,10 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
   },
   "repository": {
     "type": "git",
@@ -22,12 +25,16 @@
   "homepage": "https://github.com/sshanzel/flex-api#readme",
   "dependencies": {
     "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.45.1",
     "fastify": "^5.6.2",
     "fastify-cli": "^7.4.1",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "pg": "^8.16.3"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
+    "@types/pg": "^8.16.0",
+    "drizzle-kit": "^0.31.8",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }

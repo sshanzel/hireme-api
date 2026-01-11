@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: hiremenow-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hiremenow
+    ports:
+      - '5432:5432'
+    volumes:
+      - hiremenow_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d hiremenow']
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  hiremenow_pgdata:
