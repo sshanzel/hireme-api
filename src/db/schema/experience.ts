@@ -1,4 +1,5 @@
 import {pgTable, uuid, text, timestamp} from 'drizzle-orm/pg-core';
+import {user} from './user.ts';
 
 enum ExperienceType {
   Work = 'work',
@@ -8,7 +9,9 @@ enum ExperienceType {
 
 export const experience = pgTable('experience', {
   id: uuid().defaultRandom().primaryKey(),
-  userId: uuid().notNull(),
+  userId: uuid()
+    .notNull()
+    .references(() => user.id),
   type: text().$type<ExperienceType>().notNull(),
   title: text().notNull(),
   organization: text(),

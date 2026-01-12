@@ -1,4 +1,5 @@
 import {pgTable, uuid, text, timestamp} from 'drizzle-orm/pg-core';
+import {user} from './user.ts';
 
 enum SourceType {
   Resume = 'resume',
@@ -10,7 +11,9 @@ enum SourceType {
 
 export const file = pgTable('file', {
   id: uuid().defaultRandom().primaryKey(),
-  userId: uuid().notNull(),
+  userId: uuid()
+    .notNull()
+    .references(() => user.id),
   sourceType: text().$type<SourceType>().notNull(),
   originalFileName: text().notNull(),
   mimeType: text().notNull(),
