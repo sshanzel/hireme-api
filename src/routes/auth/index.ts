@@ -1,0 +1,95 @@
+import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
+import {authenticateUser, createUser, getUserByEmail} from '../../services/auth.ts';
+import {withAuth} from '../../utils/auth-helper.ts';
+
+interface LoginBody {
+  email: string;
+  password: string;
+}
+
+interface SignupBody {
+  email: string;
+  password: string;
+  displayName?: string;
+}
+
+export default async function authRoutes(fastify: FastifyInstance): Promise<void> {
+  fastify.post<{Body: LoginBody}>(
+    '/login',
+    async (request: FastifyRequest<{Body: LoginBody}>, reply: FastifyReply) => {
+      const {email, password} = request.body;
+
+      if (!email || !password) {
+        return reply.status(400).send({error: 'Email and password are required'});
+      }
+
+      const user = await authenticateUser(email, password);
+
+      if (!user) {
+        return reply.status(401).send({error: 'Invalid email or password'});
+      }
+
+      const token = fastify.jwt.sign({id: user.id, email: user.email});
+
+      return reply.status(200).send({
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          displayName: user.displayName,
+        },
+      });
+    }
+  );
+
+  fastify.post<{Body: SignupBody}>(
+    '/signup',
+    async (request: FastifyRequest<{Body: SignupBody}>, reply: FastifyReply) => {
+      const {email, password, displayName} = request.body;
+
+      if (!email || !password) {
+        return reply.status(400).send({error: 'Email and password are required'});
+      }
+
+      if (password.length < 6) {
+        return reply.status(400).send({error: 'Password must be at least 6 characters'});
+      }
+
+      const existingUser = await getUserByEmail(email);
+
+      if (existingUser) {
+        return reply.status(409).send({error: 'User with this email already exists'});
+      }
+
+      const newUser = await createUser(email, password, displayName);
+
+      const token = fastify.jwt.sign({id: newUser.id, email: newUser.email});
+
+      return reply.status(201).send({
+        token,
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          displayName: newUser.displayName,
+        },
+      });
+    }
+  );
+
+  fastify.post('/logout', async (request: FastifyRequest, reply: FastifyReply) => {
+    // With JWT, logout is typically handled on the client-side by deleting the token
+    // This endpoint can be used for additional cleanup if needed (e.g., token blacklisting)
+    return reply.status(200).send({message: 'Logged out successfully'});
+  });
+
+  // Protected route example - get current user
+  fastify.get(
+    '/me',
+    withAuth(async (request, reply) => {
+      return reply.status(200).send({
+        id: request.user.id,
+        email: request.user.email,
+      });
+    })
+  );
+}
