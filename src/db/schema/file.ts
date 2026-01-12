@@ -1,4 +1,4 @@
-import {pgTable, uuid, text, timestamp, unique} from 'drizzle-orm/pg-core';
+import {pgTable, uuid, text, timestamp} from 'drizzle-orm/pg-core';
 
 enum SourceType {
   Resume = 'resume',
@@ -8,7 +8,7 @@ enum SourceType {
   Other = 'other',
 }
 
-export const document = pgTable('document', {
+export const file = pgTable('file', {
   id: uuid().defaultRandom().primaryKey(),
   userId: uuid().notNull(),
   sourceType: text().$type<SourceType>().notNull(),
@@ -17,7 +17,6 @@ export const document = pgTable('document', {
   gcsBucket: text().notNull(),
   gcsPath: text().notNull(),
   sizeInBytes: uuid().notNull(),
-  contentSha256: text().notNull(),
   status: text().notNull(),
   tags: text().array().notNull(),
   createdAt: timestamp().defaultNow().notNull(),

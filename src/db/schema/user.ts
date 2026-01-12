@@ -1,6 +1,6 @@
 import {relations} from 'drizzle-orm';
 import {pgTable, uuid, text, timestamp, unique} from 'drizzle-orm/pg-core';
-import {document} from './document.ts';
+import {file} from './file.ts';
 
 export const users = pgTable(
   'user',
@@ -15,5 +15,5 @@ export const users = pgTable(
 );
 
 export const usersRelations = relations(users, ({many}) => ({
-  documents: many(document),
+  files: many(file),
 }));
