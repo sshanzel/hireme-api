@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/sshanzel/flex-api#readme",
   "dependencies": {
-    "@fastify/jwt": "^8.0.1",
+    "@fastify/jwt": "^9.1.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
@@ -39,5 +39,6 @@
     "drizzle-kit": "^0.31.8",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
-  }
+  },
+  "packageManager": "pnpm@9.15.4+sha512.b2dc20e2fc72b3e18848459b37359a32064663e5627a51e4c74b2c29dd8e8e0491483c3abb40789cfd578bf362fb6ba8261b05f0387d76792ed6e23ea3b1b6a0"
 }
