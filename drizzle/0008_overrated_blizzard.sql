@@ -1,0 +1,1 @@
+ALTER TABLE "story_raw" ALTER COLUMN "title" DROP NOT NULL;

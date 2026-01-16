@@ -57,6 +57,13 @@
       "when": 1768543303375,
       "tag": "0007_fancy_wilson_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1768566335818,
+      "tag": "0008_overrated_blizzard",
+      "breakpoints": true
     }
   ]
 }

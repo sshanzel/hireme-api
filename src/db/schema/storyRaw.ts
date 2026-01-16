@@ -7,7 +7,7 @@ export const storyRaw = pgTable('story_raw', {
     .notNull()
     .references(() => user.id),
   experienceId: uuid().references(() => experience.id),
-  title: text().notNull(),
+  title: text(),
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
 });
