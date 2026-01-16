@@ -10,7 +10,7 @@ interface LoginBody {
 interface SignupBody {
   email: string;
   password: string;
-  displayName?: string;
+  name: string;
 }
 
 export default async function authRoutes(fastify: FastifyInstance): Promise<void> {
@@ -36,7 +36,7 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
         user: {
           id: user.id,
           email: user.email,
-          displayName: user.displayName,
+          name: user.name,
         },
       });
     }
@@ -45,7 +45,7 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
   fastify.post<{Body: SignupBody}>(
     '/signup',
     async (request: FastifyRequest<{Body: SignupBody}>, reply: FastifyReply) => {
-      const {email, password, displayName} = request.body;
+      const {email, password, name} = request.body;
 
       if (!email || !password) {
         return reply.status(400).send({error: 'Email and password are required'});
@@ -61,7 +61,7 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
         return reply.status(409).send({error: 'User with this email already exists'});
       }
 
-      const newUser = await createUser(email, password, displayName);
+      const newUser = await createUser(email, password, name);
 
       const token = fastify.jwt.sign({id: newUser.id, email: newUser.email});
 
@@ -70,7 +70,7 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
         user: {
           id: newUser.id,
           email: newUser.email,
-          displayName: newUser.displayName,
+          name: newUser.name,
         },
       });
     }

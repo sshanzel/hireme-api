@@ -18,7 +18,7 @@ export async function getUserByEmail(email: string) {
   return users[0] || null;
 }
 
-export async function createUser(email: string, password: string, displayName?: string) {
+export async function createUser(email: string, password: string, name: string) {
   const passwordHash = await hashPassword(password);
 
   const users = await db
@@ -26,7 +26,7 @@ export async function createUser(email: string, password: string, displayName?: 
     .values({
       email,
       passwordHash,
-      displayName,
+      name,
     })
     .returning();
 
