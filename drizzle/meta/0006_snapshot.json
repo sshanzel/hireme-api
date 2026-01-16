@@ -1,5 +1,5 @@
 {
-  "id": "1bc6d2ba-d34e-406e-9966-115fcab59db1",
+  "id": "13feaf0e-1cdd-49e2-b44a-c21d59a7d4cf",
   "prevId": "b6dbb88c-be43-44bd-b99f-b383c063dd88",
   "version": "7",
   "dialect": "postgresql",
@@ -26,6 +26,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         },
         "created_at": {
           "name": "created_at",
@@ -139,7 +145,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "file_user_id_user_id_fk": {
+          "name": "file_user_id_user_id_fk",
+          "tableFrom": "file",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -221,7 +241,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "experience_user_id_user_id_fk": {
+          "name": "experience_user_id_user_id_fk",
+          "tableFrom": "experience",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -280,7 +314,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "story_story_raw_id_story_raw_id_fk": {
+          "name": "story_story_raw_id_story_raw_id_fk",
+          "tableFrom": "story",
+          "tableTo": "story_raw",
+          "columnsFrom": [
+            "story_raw_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -324,7 +372,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "story_index_story_id_story_id_fk": {
+          "name": "story_index_story_id_story_id_fk",
+          "tableFrom": "story_index",
+          "tableTo": "story",
+          "columnsFrom": [
+            "story_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -352,7 +414,7 @@
           "name": "experience_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "title": {
           "name": "title",
@@ -383,6 +445,19 @@
           "tableTo": "user",
           "columnsFrom": [
             "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "story_raw_experience_id_experience_id_fk": {
+          "name": "story_raw_experience_id_experience_id_fk",
+          "tableFrom": "story_raw",
+          "tableTo": "experience",
+          "columnsFrom": [
+            "experience_id"
           ],
           "columnsTo": [
             "id"
@@ -436,7 +511,21 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "story_raw_event_story_raw_id_story_raw_id_fk": {
+          "name": "story_raw_event_story_raw_id_story_raw_id_fk",
+          "tableFrom": "story_raw_event",
+          "tableTo": "story_raw",
+          "columnsFrom": [
+            "story_raw_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
