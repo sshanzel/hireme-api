@@ -29,7 +29,7 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
         return reply.status(401).send({error: 'Invalid email or password'});
       }
 
-      const token = fastify.jwt.sign({id: user.id, email: user.email});
+      const token = fastify.jwt.sign({id: user.id, email: user.email, name: user.name});
 
       return reply.status(200).send({
         token,
@@ -63,7 +63,7 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
 
       const newUser = await createUser(email, password, name);
 
-      const token = fastify.jwt.sign({id: newUser.id, email: newUser.email});
+      const token = fastify.jwt.sign({id: newUser.id, email: newUser.email, name: newUser.name});
 
       return reply.status(201).send({
         token,
@@ -86,9 +86,11 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
   fastify.get(
     '/me',
     withAuth(async (request, reply) => {
+      console.log('Authenticated user:', request.user);
       return reply.status(200).send({
         id: request.user.id,
         email: request.user.email,
+        name: request.user.name,
       });
     })
   );

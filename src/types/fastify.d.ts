@@ -5,6 +5,7 @@ declare global {
     interface Payload {
       id: string;
       email: string;
+      name: string;
     }
   }
 }
@@ -18,6 +19,7 @@ declare module 'fastify' {
     user: {
       id: string;
       email: string;
+      name: string;
     };
   }
 }
