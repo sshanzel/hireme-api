@@ -64,6 +64,13 @@
       "when": 1768566335818,
       "tag": "0008_overrated_blizzard",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1768631934074,
+      "tag": "0009_naive_jackpot",
+      "breakpoints": true
     }
   ]
 }
