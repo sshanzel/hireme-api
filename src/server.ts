@@ -1,8 +1,10 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
 import fastifyJwt from '@fastify/jwt';
+import websocket from '@fastify/websocket';
 import type {FastifyInstance, FastifyReply, FastifyRequest} from 'fastify';
 import routes from './routes/index.ts';
+import sockets from './routes/ws/index.ts';
 
 const fastify: FastifyInstance = Fastify({
   logger: true,
@@ -23,6 +25,10 @@ fastify.decorate('authenticate', async function (request: FastifyRequest, reply:
 });
 
 fastify.register(routes);
+
+await fastify.register(websocket, {options: {maxPayload: 1048576}});
+
+fastify.register(sockets, {prefix: '/ws'});
 
 const start = async () => {
   try {

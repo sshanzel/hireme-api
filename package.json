@@ -25,6 +25,7 @@
   "homepage": "https://github.com/sshanzel/flex-api#readme",
   "dependencies": {
     "@fastify/jwt": "^9.1.0",
+    "@fastify/websocket": "^11.2.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
