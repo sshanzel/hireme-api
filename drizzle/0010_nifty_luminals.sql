@@ -1,0 +1,1 @@
+ALTER TABLE "story_raw_event" ADD COLUMN "metadata" jsonb;
