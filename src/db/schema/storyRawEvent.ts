@@ -1,7 +1,7 @@
 import {pgTable, uuid, text, timestamp, pgEnum} from 'drizzle-orm/pg-core';
 import {storyRaw} from './storyRaw.ts';
 
-enum StoryRawEventType {
+export enum StoryRawEventType {
   System = 'system',
   User = 'user',
 }
