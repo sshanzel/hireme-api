@@ -17,6 +17,23 @@ export async function createStoryRaw(userId: string, experienceId?: string) {
   return storyRaws[0];
 }
 
+interface GetOrCreateStoryRawParams {
+  experienceId: string;
+  storyId: string;
+}
+
+export async function deleteStoryRaw(id: string, userId: string) {
+  const existing = await getStoryRawById(id, userId);
+
+  if (!existing) {
+    return false;
+  }
+
+  await db.delete(storyRaw).where(eq(storyRaw.id, id));
+
+  return true;
+}
+
 export async function getStoryRawsByUser(userId: string) {
   return db.select().from(storyRaw).where(eq(storyRaw.userId, userId));
 }
@@ -37,12 +54,19 @@ export async function getStoryRawWithEvents(id: string, userId: string) {
     return null;
   }
 
-  const events = await db
-    .select()
-    .from(storyRawEvent)
-    .where(eq(storyRawEvent.storyRawId, id));
+  const events = await db.select().from(storyRawEvent).where(eq(storyRawEvent.storyRawId, id));
 
   return {storyRaw: storyRawRecord, events};
+}
+
+export async function getOrCreateStoryRaw(userId: string, storyId?: string) {
+  if (!storyId) {
+    const storyRaw = await createStoryRaw(userId);
+
+    return {storyRaw, events: []};
+  }
+
+  return getStoryRawWithEvents(storyId, userId);
 }
 
 export async function updateStoryRaw(id: string, userId: string, title: string) {
@@ -61,23 +85,21 @@ export async function updateStoryRaw(id: string, userId: string, title: string) 
   return updated[0];
 }
 
-export async function createStoryRawEvent(
-  userId: string,
-  content: string,
-  type: StoryRawEventType,
-  storyRawId?: string,
-  experienceId?: string
-) {
-  let storyRawRecord;
+interface CreateStoryRawEventParams {
+  userId: string;
+  content: string;
+  type: StoryRawEventType;
+  storyRawId: string;
+}
 
-  if (storyRawId) {
-    storyRawRecord = await getStoryRawById(storyRawId, userId);
-    if (!storyRawRecord) {
-      return null;
-    }
-  } else {
-    storyRawRecord = await createStoryRaw(userId, experienceId);
-  }
+export async function createStoryRawEvent({
+  userId,
+  content,
+  type,
+  storyRawId,
+}: CreateStoryRawEventParams) {
+  const storyRawRecord = await getStoryRawById(storyRawId, userId);
+  console.log('storyRawRecord', storyRawRecord, storyRawId, userId);
 
   const events = await db
     .insert(storyRawEvent)

@@ -1,6 +1,13 @@
 import {FastifyInstance} from 'fastify';
-import {generateStoryAgent} from '../../services/storyTeller.ts';
+import {generateResponse, generateStoryAgent} from '../../services/storyTeller.ts';
 import {run} from '@openai/agents';
+import {
+  createStoryRawEvent,
+  deleteStoryRaw,
+  getOrCreateStoryRaw,
+  getStoryRawWithEvents,
+} from '../../services/storyRaw.ts';
+import {StoryRawEventType} from '../../db/schema/storyRawEvent.ts';
 
 interface EventMessage {
   storyId?: string;
@@ -18,11 +25,11 @@ enum MessageType {
 const initConnection = (userId: string, storyId?: string) => {};
 
 export default async function storyRawChatRoutes(fastify: FastifyInstance): Promise<void> {
-  fastify.get('/story-event', {websocket: true}, (connection, req) => {
+  fastify.get('/story-event', {websocket: true}, async (connection, req) => {
     const origin = req.headers.origin || '';
-    const query = req.query as Record<string, string>;
+    const {uid, storyId} = req.query as Record<string, string>;
 
-    if (!query.uid) {
+    if (!uid) {
       return connection.socket.close();
     }
 
@@ -30,19 +37,55 @@ export default async function storyRawChatRoutes(fastify: FastifyInstance): Prom
       return connection.socket.close();
     }
 
-    const storyTeller = generateStoryAgent();
+    const entity = await getOrCreateStoryRaw(uid, storyId);
+    console.log(entity);
+
+    if (!entity) {
+      return connection.socket.close();
+    }
+
+    const {storyRaw: story, events} = entity;
+    const history = events.map(({content, type}) => ({
+      content,
+      role: type,
+    }));
 
     connection.on('message', async (message: EventMessage) => {
-      const parsed = JSON.parse(message.toString());
-      console.log('Received message:', parsed);
-      const result = await run(storyTeller, parsed.data, {context: {uid: query.uid}});
-      const response = JSON.stringify({
-        type: MessageType.Response,
-        data: result.finalOutput,
+      const {data} = JSON.parse(message.toString());
+
+      await createStoryRawEvent({
+        userId: uid,
+        content: data,
+        type: StoryRawEventType.User,
+        storyRawId: story.id,
       });
-      console.log('result.output:', result.output);
-      console.log('result.finalOutput:', result.finalOutput);
+      history.push({content: data, role: StoryRawEventType.User});
+
+      const response = await generateResponse(history);
+
+      await createStoryRawEvent({
+        userId: uid,
+        content: response!,
+        type: StoryRawEventType.Assistant,
+        storyRawId: story.id,
+      });
+      history.push({content: response!, role: StoryRawEventType.Assistant});
+
       connection.send(response);
+    });
+
+    connection.on('close', async () => {
+      const result = await getStoryRawWithEvents(story.id, uid);
+
+      if (!result) {
+        return;
+      }
+
+      if (result.events.length > 0) {
+        return;
+      }
+
+      await deleteStoryRaw(story.id, uid);
     });
   });
 }
