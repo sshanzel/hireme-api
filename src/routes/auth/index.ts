@@ -86,7 +86,6 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
   fastify.get(
     '/me',
     withAuth(async (request, reply) => {
-      console.log('Authenticated user:', request.user);
       return reply.status(200).send({
         id: request.user.id,
         email: request.user.email,
