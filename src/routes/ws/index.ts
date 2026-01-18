@@ -1,6 +1,5 @@
 import {FastifyInstance} from 'fastify';
-import {generateResponse, generateStoryAgent} from '../../services/storyTeller.ts';
-import {run} from '@openai/agents';
+import {generateResponse} from '../../services/storyTeller.ts';
 import {
   createStoryRawEvent,
   deleteStoryRaw,
@@ -21,8 +20,6 @@ enum MessageType {
   StoryEvent = 'story-event',
   Response = 'response',
 }
-
-const initConnection = (userId: string, storyId?: string) => {};
 
 export default async function storyRawChatRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get('/story-event', {websocket: true}, async (connection, req) => {
@@ -81,7 +78,7 @@ export default async function storyRawChatRoutes(fastify: FastifyInstance): Prom
         return;
       }
 
-      if (result.events.length > 0) {
+      if (history.length > 0) {
         return;
       }
 

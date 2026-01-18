@@ -1,7 +1,5 @@
-import {Agent, run} from '@openai/agents';
 import {StoryRawEventType} from '../db/schema/storyRawEvent.ts';
-import {createStoryRawEvent} from './storyRaw.ts';
-import openai, {OpenAI} from 'openai';
+import {OpenAI} from 'openai';
 
 const DEFAULT_MODEL = 'gpt-4o-mini';
 const DEFAULT_TEMPERATURE = 0.7;
@@ -57,16 +55,6 @@ interface ChatStory {
   content: string;
   role: StoryRawEventType;
 }
-
-export const generateStoryAgent = (history: ChatStory[]) => {
-  const agent = new Agent({
-    name: 'Career coach',
-    model: DEFAULT_MODEL,
-    instructions: STORY_TELLER_INSTRUCTIONS,
-  });
-
-  return agent;
-};
 
 interface EventMessage {
   storyId?: string;

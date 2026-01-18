@@ -99,7 +99,6 @@ export async function createStoryRawEvent({
   storyRawId,
 }: CreateStoryRawEventParams) {
   const storyRawRecord = await getStoryRawById(storyRawId, userId);
-  console.log('storyRawRecord', storyRawRecord, storyRawId, userId);
 
   const events = await db
     .insert(storyRawEvent)
