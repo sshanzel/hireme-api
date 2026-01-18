@@ -2,14 +2,9 @@ import {pgTable, uuid, text, timestamp, pgEnum, jsonb} from 'drizzle-orm/pg-core
 import {storyRaw} from './storyRaw.ts';
 
 export enum StoryRawEventType {
-  System = 'system',
+  Assistant = 'assistant',
   User = 'user',
 }
-
-export const typeEnum = pgEnum('story_raw_event_type', [
-  StoryRawEventType.System,
-  StoryRawEventType.User,
-]);
 
 interface StoryRawEventMetadata {
   model: string;
@@ -23,7 +18,7 @@ export const storyRawEvent = pgTable('story_raw_event', {
     .notNull()
     .references(() => storyRaw.id),
   content: text().notNull(),
-  type: typeEnum().notNull(),
+  type: text().$type<StoryRawEventType>().notNull(),
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
   metadata: jsonb('metadata').$type<StoryRawEventMetadata>(),
