@@ -1,7 +1,7 @@
-import {pgTable, uuid, text, timestamp} from 'drizzle-orm/pg-core';
+import {pgTable, uuid, text, timestamp, integer} from 'drizzle-orm/pg-core';
 import {user} from './user.ts';
 
-enum SourceType {
+export enum SourceType {
   Resume = 'resume',
   CoverLetter = 'cover_letter',
   Portfolio = 'portfolio',
@@ -19,7 +19,7 @@ export const file = pgTable('file', {
   mimeType: text().notNull(),
   gcsBucket: text().notNull(),
   gcsPath: text().notNull(),
-  sizeInBytes: uuid().notNull(),
+  sizeInBytes: integer().notNull(),
   status: text().notNull(),
   tags: text().array().notNull(),
   createdAt: timestamp().defaultNow().notNull(),
