@@ -30,30 +30,6 @@ interface IdParams {
 }
 
 export default async function storyRawRoutes(fastify: FastifyInstance): Promise<void> {
-  // POST /story-raw-events - Create a new event (auto-creates storyRaw if needed)
-  fastify.post<{Body: CreateEventBody}>(
-    '/story-raw-events',
-    withAuth(async (request: AuthenticatedRequest, reply: FastifyReply) => {
-      const {content, type, storyRawId, experienceId} = request.body as CreateEventBody;
-
-      if (!content) {
-        return reply.status(400).send({error: 'Content is required'});
-      }
-
-      if (!type || !Object.values(StoryRawEventType).includes(type)) {
-        return reply.status(400).send({error: 'Type is required and must be "system" or "user"'});
-      }
-
-      const result = await createStoryRawEvent(request.user.id, content, type, storyRawId, experienceId);
-
-      if (!result) {
-        return reply.status(404).send({error: 'StoryRaw not found or access denied'});
-      }
-
-      return reply.status(201).send(result);
-    })
-  );
-
   // GET /story-raws - List all user's storyRaws
   fastify.get(
     '/story-raws',
