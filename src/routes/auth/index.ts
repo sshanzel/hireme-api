@@ -1,6 +1,7 @@
-import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
+import fastify, {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
 import {authenticateUser, createUser, getUserByEmail} from '../../services/auth.ts';
 import {withAuth} from '../../utils/auth-helper.ts';
+import {User} from '../../db/schema/user.ts';
 
 interface LoginBody {
   email: string;
@@ -12,6 +13,13 @@ interface SignupBody {
   password: string;
   name: string;
 }
+
+const getSignPayload = (user: User) => ({
+  id: user.id,
+  email: user.email,
+  name: user.name,
+  cvUploadedAt: user.cvUploadedAt,
+});
 
 export default async function authRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post<{Body: LoginBody}>(
@@ -29,7 +37,7 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
         return reply.status(401).send({error: 'Invalid email or password'});
       }
 
-      const token = fastify.jwt.sign({id: user.id, email: user.email, name: user.name});
+      const token = fastify.jwt.sign(getSignPayload(user));
 
       return reply.status(200).send({
         token,
@@ -37,6 +45,7 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
           id: user.id,
           email: user.email,
           name: user.name,
+          cvUploadedAt: user.cvUploadedAt,
         },
       });
     }
@@ -63,7 +72,7 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
 
       const newUser = await createUser(email, password, name);
 
-      const token = fastify.jwt.sign({id: newUser.id, email: newUser.email, name: newUser.name});
+      const token = fastify.jwt.sign(getSignPayload(newUser));
 
       return reply.status(201).send({
         token,
@@ -71,6 +80,7 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
           id: newUser.id,
           email: newUser.email,
           name: newUser.name,
+          cvUploadedAt: newUser.cvUploadedAt,
         },
       });
     }

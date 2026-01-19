@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "cv_uploaded_at" timestamp;

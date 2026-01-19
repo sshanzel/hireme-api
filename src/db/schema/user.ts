@@ -11,6 +11,7 @@ export const user = pgTable(
     passwordHash: text().notNull(),
     createdAt: timestamp().defaultNow().notNull(),
     updatedAt: timestamp().defaultNow().notNull(),
+    cvUploadedAt: timestamp(),
   },
   t => [unique('users_email_unique').on(t.email)]
 );
@@ -18,3 +19,5 @@ export const user = pgTable(
 export const usersRelations = relations(user, ({many}) => ({
   files: many(file),
 }));
+
+export type User = typeof user.$inferSelect;

@@ -1,4 +1,4 @@
-import {FastifyInstance, FastifyRequest, FastifyReply, RouteHandlerMethod} from 'fastify';
+import {FastifyRequest, FastifyReply, RouteHandlerMethod} from 'fastify';
 
 export interface AuthenticatedUser {
   id: string;
