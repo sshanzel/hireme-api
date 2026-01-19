@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
 import fastifyJwt from '@fastify/jwt';
+import fastifyMultipart from '@fastify/multipart';
 import websocket from '@fastify/websocket';
 import type {FastifyInstance, FastifyReply, FastifyRequest} from 'fastify';
 import routes from './routes/index.ts';
@@ -12,6 +13,13 @@ const fastify: FastifyInstance = Fastify({
 
 // Register JWT plugin
 fastify.register(fastifyJwt, {secret: process.env.JWT_SECRET!});
+
+// Register multipart for file uploads
+fastify.register(fastifyMultipart, {
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
+});
 
 // Decorate fastify with authenticate function
 fastify.decorate('authenticate', async function (request: FastifyRequest, reply: FastifyReply) {
