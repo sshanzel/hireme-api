@@ -1,5 +1,5 @@
 import {pgTable, uuid, text, timestamp} from 'drizzle-orm/pg-core';
-import {user} from './user.ts';
+import {userTable} from './user.ts';
 
 enum ExperienceType {
   Work = 'work',
@@ -7,11 +7,11 @@ enum ExperienceType {
   Education = 'education',
 }
 
-export const experience = pgTable('experience', {
+export const experienceTable = pgTable('experience', {
   id: uuid().defaultRandom().primaryKey(),
   userId: uuid()
     .notNull()
-    .references(() => user.id),
+    .references(() => userTable.id),
   type: text().$type<ExperienceType>().notNull(),
   title: text().notNull(),
   organization: text(),
@@ -22,3 +22,5 @@ export const experience = pgTable('experience', {
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
 });
+
+export type Experience = typeof experienceTable.$inferSelect;

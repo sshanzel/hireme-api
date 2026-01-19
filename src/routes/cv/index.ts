@@ -2,10 +2,10 @@ import {FastifyInstance} from 'fastify';
 import {withAuth, AuthenticatedRequest} from '../../utils/auth-helper.ts';
 import {publish} from '../../services/pubsub.ts';
 import {uploadFile} from '../../services/storage.ts';
-import {file as fileTable, SourceType} from '../../db/schema/file.ts';
+import {fileTable as fileTable, SourceType} from '../../db/schema/file.ts';
 import {db} from '../../db/index.ts';
 import {BUCKET_NAME, UNPARSED_CVS_FOLDER} from '../../services/gcp.ts';
-import {user} from '../../db/schema/user.ts';
+import {userTable} from '../../db/schema/user.ts';
 import {eq} from 'drizzle-orm';
 
 const ALLOWED_MIME_TYPES = [
@@ -62,7 +62,10 @@ export default async function cvRoutes(fastify: FastifyInstance): Promise<void> 
 
         const fileId = record[0].id;
 
-        await db.update(user).set({cvUploadedAt: new Date()}).where(eq(user.id, request.user.id));
+        await db
+          .update(userTable)
+          .set({cvUploadedAt: new Date()})
+          .where(eq(userTable.id, request.user.id));
 
         await publish('api.v1.cv-uploaded', {fileId});
       });

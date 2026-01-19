@@ -1,5 +1,5 @@
 import {pgTable, uuid, text, timestamp, integer} from 'drizzle-orm/pg-core';
-import {user} from './user.ts';
+import {userTable} from './user.ts';
 
 export enum SourceType {
   Resume = 'resume',
@@ -9,11 +9,11 @@ export enum SourceType {
   Other = 'other',
 }
 
-export const file = pgTable('file', {
+export const fileTable = pgTable('file', {
   id: uuid().defaultRandom().primaryKey(),
   userId: uuid()
     .notNull()
-    .references(() => user.id),
+    .references(() => userTable.id),
   sourceType: text().$type<SourceType>().notNull(),
   originalFileName: text().notNull(),
   mimeType: text().notNull(),
@@ -25,3 +25,5 @@ export const file = pgTable('file', {
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
 });
+
+export type File = typeof fileTable.$inferSelect;

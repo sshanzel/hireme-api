@@ -1,6 +1,6 @@
 import bcryptjs from 'bcryptjs';
 import {db} from '../db/index.ts';
-import {user} from '../db/schema/index.ts';
+import {userTable} from '../db/schema/index.ts';
 import {eq} from 'drizzle-orm';
 
 const SALT_ROUNDS = 10;
@@ -14,7 +14,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export async function getUserByEmail(email: string) {
-  const users = await db.select().from(user).where(eq(user.email, email));
+  const users = await db.select().from(userTable).where(eq(userTable.email, email));
   return users[0] || null;
 }
 
@@ -22,7 +22,7 @@ export async function createUser(email: string, password: string, name: string) 
   const passwordHash = await hashPassword(password);
 
   const users = await db
-    .insert(user)
+    .insert(userTable)
     .values({
       email,
       passwordHash,

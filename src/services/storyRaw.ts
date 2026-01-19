@@ -1,12 +1,12 @@
 import {db} from '../db/index.ts';
-import {storyRaw, storyRawEvent, StoryRawEventType} from '../db/schema/index.ts';
+import {storyRawTable, storyRawEventTable, StoryRawEventType} from '../db/schema/index.ts';
 import {eq, and} from 'drizzle-orm';
 
 export async function createStoryRaw(userId: string, experienceId?: string) {
   const title = `Story - ${new Date().toISOString()}`;
 
   const storyRaws = await db
-    .insert(storyRaw)
+    .insert(storyRawTable)
     .values({
       userId,
       experienceId,
@@ -29,20 +29,20 @@ export async function deleteStoryRaw(id: string, userId: string) {
     return false;
   }
 
-  await db.delete(storyRaw).where(eq(storyRaw.id, id));
+  await db.delete(storyRawTable).where(eq(storyRawTable.id, id));
 
   return true;
 }
 
 export async function getStoryRawsByUser(userId: string) {
-  return db.select().from(storyRaw).where(eq(storyRaw.userId, userId));
+  return db.select().from(storyRawTable).where(eq(storyRawTable.userId, userId));
 }
 
 export async function getStoryRawById(id: string, userId: string) {
   const storyRaws = await db
     .select()
-    .from(storyRaw)
-    .where(and(eq(storyRaw.id, id), eq(storyRaw.userId, userId)));
+    .from(storyRawTable)
+    .where(and(eq(storyRawTable.id, id), eq(storyRawTable.userId, userId)));
 
   return storyRaws[0] || null;
 }
@@ -54,7 +54,10 @@ export async function getStoryRawWithEvents(id: string, userId: string) {
     return null;
   }
 
-  const events = await db.select().from(storyRawEvent).where(eq(storyRawEvent.storyRawId, id));
+  const events = await db
+    .select()
+    .from(storyRawEventTable)
+    .where(eq(storyRawEventTable.storyRawId, id));
 
   return {storyRaw: storyRawRecord, events};
 }
@@ -77,9 +80,9 @@ export async function updateStoryRaw(id: string, userId: string, title: string) 
   }
 
   const updated = await db
-    .update(storyRaw)
+    .update(storyRawTable)
     .set({title, updatedAt: new Date()})
-    .where(eq(storyRaw.id, id))
+    .where(eq(storyRawTable.id, id))
     .returning();
 
   return updated[0];
@@ -101,7 +104,7 @@ export async function createStoryRawEvent({
   const storyRawRecord = await getStoryRawById(storyRawId, userId);
 
   const events = await db
-    .insert(storyRawEvent)
+    .insert(storyRawEventTable)
     .values({
       storyRawId: storyRawRecord.id,
       content,
@@ -113,7 +116,10 @@ export async function createStoryRawEvent({
 }
 
 export async function updateStoryRawEvent(id: string, userId: string, content: string) {
-  const eventRecord = await db.select().from(storyRawEvent).where(eq(storyRawEvent.id, id));
+  const eventRecord = await db
+    .select()
+    .from(storyRawEventTable)
+    .where(eq(storyRawEventTable.id, id));
 
   if (!eventRecord[0]) {
     return null;
@@ -126,16 +132,19 @@ export async function updateStoryRawEvent(id: string, userId: string, content: s
   }
 
   const updated = await db
-    .update(storyRawEvent)
+    .update(storyRawEventTable)
     .set({content, updatedAt: new Date()})
-    .where(eq(storyRawEvent.id, id))
+    .where(eq(storyRawEventTable.id, id))
     .returning();
 
   return updated[0];
 }
 
 export async function deleteStoryRawEvent(id: string, userId: string) {
-  const eventRecord = await db.select().from(storyRawEvent).where(eq(storyRawEvent.id, id));
+  const eventRecord = await db
+    .select()
+    .from(storyRawEventTable)
+    .where(eq(storyRawEventTable.id, id));
 
   if (!eventRecord[0]) {
     return false;
@@ -147,7 +156,7 @@ export async function deleteStoryRawEvent(id: string, userId: string) {
     return false;
   }
 
-  await db.delete(storyRawEvent).where(eq(storyRawEvent.id, id));
+  await db.delete(storyRawEventTable).where(eq(storyRawEventTable.id, id));
 
   return true;
 }

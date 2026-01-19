@@ -1,8 +1,8 @@
 import {relations} from 'drizzle-orm';
 import {pgTable, uuid, text, timestamp, unique} from 'drizzle-orm/pg-core';
-import {file} from './file.ts';
+import {fileTable} from './file.ts';
 
-export const user = pgTable(
+export const userTable = pgTable(
   'user',
   {
     id: uuid().defaultRandom().primaryKey(),
@@ -16,8 +16,8 @@ export const user = pgTable(
   t => [unique('users_email_unique').on(t.email)]
 );
 
-export const usersRelations = relations(user, ({many}) => ({
-  files: many(file),
+export const usersRelations = relations(userTable, ({many}) => ({
+  files: many(fileTable),
 }));
 
-export type User = typeof user.$inferSelect;
+export type User = typeof userTable.$inferSelect;
