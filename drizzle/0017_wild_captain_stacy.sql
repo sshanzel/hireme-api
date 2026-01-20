@@ -1,0 +1,1 @@
+ALTER TABLE "user_parsed_archive" RENAME COLUMN "parsed" TO "stringified";

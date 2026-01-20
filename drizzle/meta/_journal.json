@@ -113,6 +113,20 @@
       "when": 1768927259720,
       "tag": "0015_useful_sunspot",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1768928901558,
+      "tag": "0016_redundant_shatterstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1768930121455,
+      "tag": "0017_wild_captain_stacy",
+      "breakpoints": true
     }
   ]
 }
