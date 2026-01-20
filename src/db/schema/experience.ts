@@ -1,7 +1,7 @@
 import {pgTable, uuid, text, timestamp} from 'drizzle-orm/pg-core';
 import {userTable} from './user.ts';
 
-enum ExperienceType {
+export enum ExperienceType {
   Work = 'work',
   Project = 'project',
   Education = 'education',
