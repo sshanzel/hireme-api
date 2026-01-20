@@ -24,6 +24,8 @@ export const fileTable = pgTable('file', {
   tags: text().array().notNull(),
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
+  signedUrlExpiry: timestamp(),
+  signedUrl: text(),
 });
 
 export type File = typeof fileTable.$inferSelect;
