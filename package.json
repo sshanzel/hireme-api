@@ -12,7 +12,8 @@
     "start:worker": "node dist/worker.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "bin:parse-cv": "tsx bin/parse-cv.ts"
   },
   "repository": {
     "type": "git",
