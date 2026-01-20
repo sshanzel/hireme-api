@@ -21,13 +21,18 @@ export async function uploadFile(
   console.log(`Uploaded to gs://${BUCKET_NAME}/${destinationPath}`);
 }
 
-export async function getSignedUrl(path: string, expiresInMinutes: number = 15): Promise<string> {
+export async function getSignedUrl(
+  path: string,
+  expiresInMinutes: number = 15
+): Promise<[string, number]> {
+  const expiry = Date.now() + expiresInMinutes * 60 * 1000;
   const [url] = await bucket.file(path).getSignedUrl({
+    version: 'v4',
     action: 'read',
-    expires: Date.now() + expiresInMinutes * 60 * 1000,
+    expires: expiry,
   });
 
-  return url;
+  return [url, expiry];
 }
 
 export async function deleteFile(path: string): Promise<void> {
