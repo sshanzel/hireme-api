@@ -35,7 +35,6 @@ export default async function storyRawChatRoutes(fastify: FastifyInstance): Prom
     }
 
     const entity = await getOrCreateStoryRaw(uid, storyId);
-    console.log(entity);
 
     if (!entity) {
       return connection.socket.close();
