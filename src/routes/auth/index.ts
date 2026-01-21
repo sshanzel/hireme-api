@@ -96,10 +96,17 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
   fastify.get(
     '/me',
     withAuth(async (request, reply) => {
+      const user = await getUserByEmail(request.user.email);
+
+      if (!user) {
+        return reply.status(404).send({error: 'User not found'});
+      }
+
       return reply.status(200).send({
-        id: request.user.id,
-        email: request.user.email,
-        name: request.user.name,
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        cvUploadedAt: user.cvUploadedAt,
       });
     })
   );

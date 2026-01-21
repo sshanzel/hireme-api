@@ -1,19 +1,26 @@
 import {StoryRawEventType} from '../db/schema/storyRawEvent.ts';
 import {OpenAI} from 'openai';
+import {z} from 'zod';
+import {zodResponseFormat} from 'openai/helpers/zod';
 
 const DEFAULT_MODEL = 'gpt-4o-mini';
-const DEFAULT_TEMPERATURE = 0.7;
-const DEFAULT_MAX_TOKENS = 1500;
-const DEFAULT_TOP_P = 0.9;
-const DEFAULT_FREQUENCY_PENALTY = 0;
-const DEFAULT_PRESENCE_PENALTY = 0;
-const DEFAULT_STOP = ['\n\n'];
-const DEFAULT_TIMEOUT = 60000; // 60 seconds
-const DEFAULT_RETRY_COUNT = 3;
-const DEFAULT_RETRY_DELAY = 2000; // 2 seconds
-const DEFAULT_LOGGING = true;
-const DEFAULT_API_BASE_URL = 'https://api.openai.com/v1';
-const DEFAULT_API_KEY = process.env.OPENAI_API_KEY || '';
+
+// Response schema for structured output
+const StoryResponseSchema = z.object({
+  content: z.string().describe('Your conversational response to the user'),
+  title: z
+    .string()
+    .nullable()
+    .describe('A concise title for this story (only if this is a new conversation, otherwise null)'),
+  tags: z
+    .array(z.string())
+    .nullable()
+    .describe(
+      'Observed traits/signals from the conversation such as leadership, ownership, technical-depth, problem-solving, collaboration, impact, initiative, adaptability (only if this is a new conversation, otherwise null)'
+    ),
+});
+
+type StoryResponse = z.infer<typeof StoryResponseSchema>;
 
 const STORY_TELLER_INSTRUCTIONS = `
   You are a career coach helping users articulate individual career stories that will later be distilled into resume-ready signals.
@@ -49,38 +56,55 @@ const STORY_TELLER_INSTRUCTIONS = `
   As you refine the story, internally note which signals naturally emerge (e.g. ownership, leadership, technical depth, impact, ambiguity), but do not force or exaggerate them if they are not present.
 
   You refined but you don't have to tell the user you did so.
+
+  ## Response Format
+  You will respond in a structured format with the following fields:
+  - content: Your conversational response
+  - title: A concise, descriptive title for this story (e.g., "Leading Cloud Migration at Scale", "Debugging Production Outage Under Pressure")
+  - tags: Array of observed traits/signals (e.g., ["leadership", "technical-depth", "ownership"])
+
+  IMPORTANT: Only provide title and tags if this is a NEW conversation (you will be told if it is new). For ongoing conversations, set title and tags to null.
 `;
 
-interface ChatStory {
+interface ChatMessage {
   content: string;
-  role: StoryRawEventType;
+  type: StoryRawEventType;
 }
 
-interface EventMessage {
-  storyId?: string;
-  content: string;
-  type: 'ugc';
+interface GenerateResponseParams {
+  history: ChatMessage[];
+  isNewConversation: boolean;
 }
 
-enum MessageType {
-  StoryEvent = 'story-event',
-  Response = 'response',
-}
-
-export const generateResponse = async (history: ChatStory[]) => {
+export async function generateResponse({history, isNewConversation}: GenerateResponseParams): Promise<StoryResponse> {
   const openai = new OpenAI();
-  const result = await openai.responses.create({
-    model: 'gpt-4o-mini',
-    instructions: STORY_TELLER_INSTRUCTIONS,
-    input: history,
+
+  // Build the instruction with context about whether this is a new conversation
+  const contextualInstruction = isNewConversation
+    ? `${STORY_TELLER_INSTRUCTIONS}\n\nThis is a NEW conversation. Please provide a title and tags.`
+    : `${STORY_TELLER_INSTRUCTIONS}\n\nThis is an ONGOING conversation. Set title and tags to null.`;
+
+  // Convert history to OpenAI message format
+  const messages: OpenAI.ChatCompletionMessageParam[] = history.map(msg => ({
+    role: msg.type === StoryRawEventType.User ? 'user' : 'assistant',
+    content: msg.content,
+  }));
+
+  const result = await openai.chat.completions.create({
+    model: DEFAULT_MODEL,
+    messages: [{role: 'system', content: contextualInstruction}, ...messages],
+    response_format: zodResponseFormat(StoryResponseSchema, 'story_response'),
   });
 
-  const response = JSON.stringify({
-    type: MessageType.Response,
-    data: result.output_text,
-  });
-  console.log('result.output:', result.output);
-  console.log('result.finalOutput:', result.output_text);
+  const content = result.choices[0].message.content;
 
-  return response;
-};
+  if (!content) {
+    throw new Error('No response content from OpenAI');
+  }
+
+  const parsed = StoryResponseSchema.parse(JSON.parse(content));
+
+  return parsed;
+}
+
+export {StoryResponseSchema, type StoryResponse};

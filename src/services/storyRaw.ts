@@ -3,14 +3,11 @@ import {storyRawTable, storyRawEventTable, StoryRawEventType} from '../db/schema
 import {eq, and} from 'drizzle-orm';
 
 export async function createStoryRaw(userId: string, experienceId?: string) {
-  const title = `Story - ${new Date().toISOString()}`;
-
   const storyRaws = await db
     .insert(storyRawTable)
     .values({
       userId,
       experienceId,
-      title,
     })
     .returning();
 
@@ -72,16 +69,31 @@ export async function getOrCreateStoryRaw(userId: string, storyId?: string) {
   return getStoryRawWithEvents(storyId, userId);
 }
 
-export async function updateStoryRaw(id: string, userId: string, title: string) {
+interface UpdateStoryRawParams {
+  title?: string;
+  tags?: string[];
+}
+
+export async function updateStoryRaw(id: string, userId: string, params: UpdateStoryRawParams) {
   const existing = await getStoryRawById(id, userId);
 
   if (!existing) {
     return null;
   }
 
+  const updateData: Record<string, unknown> = {updatedAt: new Date()};
+
+  if (params.title !== undefined) {
+    updateData.title = params.title;
+  }
+
+  if (params.tags !== undefined) {
+    updateData.tags = params.tags;
+  }
+
   const updated = await db
     .update(storyRawTable)
-    .set({title, updatedAt: new Date()})
+    .set(updateData)
     .where(eq(storyRawTable.id, id))
     .returning();
 

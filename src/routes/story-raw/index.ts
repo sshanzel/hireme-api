@@ -65,7 +65,7 @@ export default async function storyRawRoutes(fastify: FastifyInstance): Promise<
         return reply.status(400).send({error: 'Title is required'});
       }
 
-      const updated = await updateStoryRaw(id, request.user.id, title);
+      const updated = await updateStoryRaw(id, request.user.id, {title});
 
       if (!updated) {
         return reply.status(404).send({error: 'StoryRaw not found'});

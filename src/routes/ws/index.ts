@@ -5,21 +5,11 @@ import {
   deleteStoryRaw,
   getOrCreateStoryRaw,
   getStoryRawWithEvents,
+  updateStoryRaw,
 } from '../../services/storyRaw.ts';
 import {StoryRawEventType} from '../../db/schema/storyRawEvent.ts';
 
-interface EventMessage {
-  storyId?: string;
-  content: string;
-  type: 'ugc';
-}
-
 const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
-
-enum MessageType {
-  StoryEvent = 'story-event',
-  Response = 'response',
-}
 
 export default async function storyRawChatRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get('/story-event', {websocket: true}, async (connection, req) => {
@@ -41,12 +31,9 @@ export default async function storyRawChatRoutes(fastify: FastifyInstance): Prom
     }
 
     const {storyRaw: story, events} = entity;
-    const history = events.map(({content, type}) => ({
-      content,
-      role: type,
-    }));
+    const history = events.map(({content, type}) => ({content, type}));
 
-    connection.on('message', async (message: EventMessage) => {
+    connection.on('message', async (message: Buffer) => {
       const {data} = JSON.parse(message.toString());
 
       await createStoryRawEvent({
@@ -55,19 +42,27 @@ export default async function storyRawChatRoutes(fastify: FastifyInstance): Prom
         type: StoryRawEventType.User,
         storyRawId: story.id,
       });
-      history.push({content: data, role: StoryRawEventType.User});
+      history.push({content: data, type: StoryRawEventType.User});
 
-      const response = await generateResponse(history);
+      const isNewConversation = history.length === 1;
+      const response = await generateResponse({history, isNewConversation});
 
       await createStoryRawEvent({
         userId: uid,
-        content: response!,
+        content: response.content,
         type: StoryRawEventType.Assistant,
         storyRawId: story.id,
       });
-      history.push({content: response!, role: StoryRawEventType.Assistant});
+      history.push({content: response.content, type: StoryRawEventType.Assistant});
 
-      connection.send(response);
+      if (isNewConversation && (response.title || response.tags)) {
+        await updateStoryRaw(story.id, uid, {
+          title: response.title ?? undefined,
+          tags: response.tags ?? undefined,
+        });
+      }
+
+      connection.send(JSON.stringify(response));
     });
 
     connection.on('close', async () => {
