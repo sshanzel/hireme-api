@@ -11,7 +11,9 @@ const StoryResponseSchema = z.object({
   title: z
     .string()
     .nullable()
-    .describe('A concise title for this story (only if this is a new conversation, otherwise null)'),
+    .describe(
+      'A concise title for this story (only if this is a new conversation, otherwise null)'
+    ),
   tags: z
     .array(z.string())
     .nullable()
@@ -57,13 +59,23 @@ const STORY_TELLER_INSTRUCTIONS = `
 
   You refined but you don't have to tell the user you did so.
 
+  Always respond in the specified structured format.
+
+`;
+
+const format = {
+  content: 'Your conversational response',
+  title: 'A concise, appealing title for the story',
+  tags: 'Array of observed traits/signals (e.g., ["leadership", "technical-depth", "ownership"])',
+};
+
+const conversationFormat = `
+
   ## Response Format
   You will respond in a structured format with the following fields:
   - content: Your conversational response
-  - title: A concise, descriptive title for this story (e.g., "Leading Cloud Migration at Scale", "Debugging Production Outage Under Pressure")
+  - title: A concise, appealing title that displays the signals we found (e.g., "Leading Cloud Migration at Scale", "Debugging Production Outage Under Pressure"). Probably 5 words or less.
   - tags: Array of observed traits/signals (e.g., ["leadership", "technical-depth", "ownership"])
-
-  IMPORTANT: Only provide title and tags if this is a NEW conversation (you will be told if it is new). For ongoing conversations, set title and tags to null.
 `;
 
 interface ChatMessage {
@@ -71,16 +83,28 @@ interface ChatMessage {
   type: StoryRawEventType;
 }
 
+const getFormat = (isNew: boolean) => {
+  const props = isNew ? format : {content: format.content};
+
+  const formatting = `
+    ## Response Format
+    You will respond in a structured format with the following fields:
+    ${Object.entries(props)
+      .map(([key, desc]) => `- ${key}: ${desc}`)
+      .join('\n    ')}
+  `;
+  return formatting;
+};
+
 export async function generateResponse(history: ChatMessage[]): Promise<StoryResponse> {
   const openai = new OpenAI();
 
   // New conversation = only 1 user message in history
   const isNewConversation = history.filter(m => m.type === StoryRawEventType.User).length === 1;
+  const formatting = getFormat(isNewConversation);
 
   // Build the instruction with context about whether this is a new conversation
-  const contextualInstruction = isNewConversation
-    ? `${STORY_TELLER_INSTRUCTIONS}\n\nThis is a NEW conversation. Please provide a title and tags.`
-    : `${STORY_TELLER_INSTRUCTIONS}\n\nThis is an ONGOING conversation. Set title and tags to null.`;
+  const contextualInstruction = `${STORY_TELLER_INSTRUCTIONS}${formatting}`;
 
   // Convert history to OpenAI message format
   const messages: OpenAI.ChatCompletionMessageParam[] = history.map(msg => ({
