@@ -1,0 +1,38 @@
+[
+  {
+    "id": "bd51ce63-f095-438b-be9e-0191ad8b6187",
+    "story_raw_id": "09886cac-c758-4872-8ccf-d8e83815dd79",
+    "content": "I contributed to an OSS app for which I introduced a vim-like navigation feature. After the founders decided to move from Vue to React, unfortunately they had to maximize their time as there is only a single engineer from the team, they had to let go of some features relating to QoL. I heard the news and proactively offered to bring back the feature largely from scratch using the new framework.",
+    "type": "user",
+    "created_at": "2026-01-21T08:05:01.738Z",
+    "updated_at": "2026-01-21T08:05:01.738Z",
+    "metadata": null
+  },
+  {
+    "id": "b74f9380-78c1-4ca9-a778-c8163298672a",
+    "story_raw_id": "09886cac-c758-4872-8ccf-d8e83815dd79",
+    "content": "{\"type\":\"response\",\"data\":\"You stepped up in a significant way by introducing a vim-like navigation feature in an open-source application. When the founders transitioned the project from Vue to React, the change meant limited resources—especially with only one engineer remaining on the team—leading to the unfortunate decision to drop some quality-of-life features. Recognizing the value of the lost navigation feature, you proactively offered to rebuild it from the ground up using React. Your initiative not only demonstrated your commitment to the project but also your ability to adapt and contribute effectively under constraints, ultimately enhancing user experience in the app.\"}",
+    "type": "assistant",
+    "created_at": "2026-01-21T08:05:06.008Z",
+    "updated_at": "2026-01-21T08:05:06.008Z",
+    "metadata": null
+  },
+  {
+    "id": "75cb63a9-9c5b-45da-8e44-3466fdbb8969",
+    "story_raw_id": "09886cac-c758-4872-8ccf-d8e83815dd79",
+    "content": "Did I display ownership throughout rebuilding the whole thing?",
+    "type": "user",
+    "created_at": "2026-01-21T08:05:40.306Z",
+    "updated_at": "2026-01-21T08:05:40.306Z",
+    "metadata": null
+  },
+  {
+    "id": "f3a9aa31-814b-4d9e-899f-5f3994e88b94",
+    "story_raw_id": "09886cac-c758-4872-8ccf-d8e83815dd79",
+    "content": "{\"type\":\"response\",\"data\":\"Yes, you clearly demonstrated ownership throughout the process. By proactively offering to rebuild the vim-like navigation feature from scratch, you took full responsibility for its revival and improvement. This initiative shows not only your commitment to the project but also your willingness to drive it forward during a challenging transition. Your actions contributed significantly to enhancing the application’s functionality and user experience, solidifying your role as a key contributor.\"}",
+    "type": "assistant",
+    "created_at": "2026-01-21T08:05:43.787Z",
+    "updated_at": "2026-01-21T08:05:43.787Z",
+    "metadata": null
+  }
+]

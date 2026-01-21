@@ -14,7 +14,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "bin:parse-cv": "tsx bin/parse-cv.ts",
-    "bin:db-reset": "tsx bin/db-reset.ts"
+    "bin:db-reset": "tsx bin/db-reset.ts",
+    "bin:db-export": "tsx bin/db-export.ts",
+    "bin:db-seed": "tsx bin/db-seed.ts"
   },
   "repository": {
     "type": "git",

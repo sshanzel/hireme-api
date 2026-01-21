@@ -1,0 +1,38 @@
+[
+  {
+    "id": "16b9f85e-f1a1-4474-9f69-37ce309e5ac1",
+    "user_id": "b93b4553-1a2a-44f8-93d0-5ed606a0cc7d",
+    "source_type": "resume",
+    "original_file_name": "Lee Hansel Solevilla.pdf",
+    "mime_type": "application/pdf",
+    "gcs_bucket": "hiremedev",
+    "gcs_path": "unparsed-cvs/b93b4553-1a2a-44f8-93d0-5ed606a0cc7d.pdf",
+    "size_in_bytes": 241371,
+    "status": "uploaded",
+    "tags": [
+      "cv"
+    ],
+    "created_at": "2026-01-21T07:58:48.957Z",
+    "updated_at": "2026-01-21T07:58:48.957Z",
+    "signed_url_expiry": "2026-01-21T22:58:49.155Z",
+    "signed_url": "https://storage.googleapis.com/hiremedev/unparsed-cvs/b93b4553-1a2a-44f8-93d0-5ed606a0cc7d.pdf?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=hiremedev-api%40hiremedev.iam.gserviceaccount.com%2F20260121%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260121T115849Z&X-Goog-Expires=54000&X-Goog-SignedHeaders=host&X-Goog-Signature=42ff75166b3a0877af2fc5ea9b2321fb5e4f08eeb7e3ec20e6c7d833331f70b19b2c1438432eee0b7fde5d59dd02fc4dad36c3206f873a42eea19e4880c6fa7623abeefe400d2dda30db1608af0f1258d7ffe22fba9dec0255269ac6964927e87bdfdca7a7e269ee16d36ba72c675b87cb609c37418877fc117cfd23fc9d095e3a99c3ff37974e4c6f415ec9dd5ef003f321b8d05638685d5f164b029664c205dbb99e4fc6cb664778782764cdbe62e33e7340080833c4e0be977757101d62b2215a06a6531df344e5e4c21ae0447b4f08feb797cefbbd449bd52d8d7e3abeef9643f5dc40a7be54a9d15bdc7f2ff4c94b17a9e86701b8456e6fc329e3c47502"
+  },
+  {
+    "id": "915294d8-b55c-4c5a-b94f-585823ec2820",
+    "user_id": "b93b4553-1a2a-44f8-93d0-5ed606a0cc7d",
+    "source_type": "resume",
+    "original_file_name": "Lee Hansel Solevilla.pdf",
+    "mime_type": "application/pdf",
+    "gcs_bucket": "hiremedev",
+    "gcs_path": "unparsed-cvs/b93b4553-1a2a-44f8-93d0-5ed606a0cc7d.pdf",
+    "size_in_bytes": 241371,
+    "status": "processed",
+    "tags": [
+      "cv"
+    ],
+    "created_at": "2026-01-21T08:02:06.809Z",
+    "updated_at": "2026-01-21T08:02:29.580Z",
+    "signed_url_expiry": "2026-01-21T23:02:06.988Z",
+    "signed_url": "https://storage.googleapis.com/hiremedev/unparsed-cvs/b93b4553-1a2a-44f8-93d0-5ed606a0cc7d.pdf?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=hiremedev-api%40hiremedev.iam.gserviceaccount.com%2F20260121%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260121T120206Z&X-Goog-Expires=54000&X-Goog-SignedHeaders=host&X-Goog-Signature=43c93195c674f50c4a7b40f907c05d812c941bc932bdfb86f9e905302fb5cb7b5d756cb05f7e1c50295b0025b90a07dd91d9627a7a7bfdcad54e1e8d4ab067b496ae24952b2563ec053755219c81bc4b5991899abdea81cc1d91b135b4a29e59fd6a16c22a323234a6e535947d1de9071e628380b65f2a6046364222a4a7b86c4f1b027c0e81c1b03d8c5ed9216d61830b7263936b419a046f17f76880a762ea37887cbf31ebd6414b3e6b909a008db714df6a8d2d7cceef60d3ad5322ca63f122dd53d9c1f79af7b269a02486ae908957d906219972e49a4ac38f0d2a48dc49df45544fc32195a2a891371bef9221f50c09b8a2177110515ba3980ba9889a4c"
+  }
+]
