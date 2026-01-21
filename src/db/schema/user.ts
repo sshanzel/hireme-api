@@ -12,6 +12,9 @@ export const userTable = pgTable(
     createdAt: timestamp().defaultNow().notNull(),
     updatedAt: timestamp().defaultNow().notNull(),
     cvUploadedAt: timestamp(),
+    links: text().array().notNull().default([]),
+    summary: text(),
+    headline: text(),
   },
   t => [unique('users_email_unique').on(t.email)]
 );

@@ -6,6 +6,7 @@ import type {SubscriptionConfig} from './types.ts';
 import {getSignedUrl} from '../services/storage.ts';
 import {parseResume, type Entry, type Entry2} from '../services/parser.ts';
 import {userParsedArchive} from '../db/schema/userParsedArchive.ts';
+import {userTable} from '../db/schema/user.ts';
 
 interface CvUploadedEvent {
   fileId: string;
@@ -99,6 +100,16 @@ export const cvUploadParsingSubscription: SubscriptionConfig<CvUploadedEvent> = 
       await db.insert(experienceTable).values(educationRecords);
       console.log(`Inserted ${educationRecords.length} education records`);
     }
+
+    await db
+      .update(userTable)
+      .set({
+        links: extractedData.personal_infos.urls || [],
+        name: extractedData.personal_infos.name.raw_name,
+        summary: extractedData.personal_infos.self_summary,
+        headline: extractedData.personal_infos.current_profession,
+      })
+      .where(eq(userTable.id, file.userId));
 
     console.log(`CV parsing complete for file id: ${data.fileId}`);
   },

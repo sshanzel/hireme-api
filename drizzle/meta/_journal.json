@@ -127,6 +127,20 @@
       "when": 1768930121455,
       "tag": "0017_wild_captain_stacy",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1768994342287,
+      "tag": "0018_sloppy_zarda",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1768996472140,
+      "tag": "0019_flowery_carlie_cooper",
+      "breakpoints": true
     }
   ]
 }
