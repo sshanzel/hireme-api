@@ -1,6 +1,6 @@
-import {eq} from 'drizzle-orm';
+import {and, eq} from 'drizzle-orm';
 import {db} from '../db/index.ts';
-import {fileTable} from '../db/schema/file.ts';
+import {FileStatus, fileTable} from '../db/schema/file.ts';
 import {experienceTable, ExperienceType} from '../db/schema/experience.ts';
 import type {SubscriptionConfig} from './types.ts';
 import {getSignedUrl} from '../services/storage.ts';
@@ -49,7 +49,11 @@ export const cvUploadParsingSubscription: SubscriptionConfig<CvUploadedEvent> = 
   subscription: 'api.v1.cv-uploaded-parsing',
   handler: async (data): Promise<void> => {
     console.log(`processing file id: ${data.fileId}`);
-    const [file] = await db.select().from(fileTable).where(eq(fileTable.id, data.fileId)).limit(1);
+    const [file] = await db
+      .select()
+      .from(fileTable)
+      .where(and(eq(fileTable.id, data.fileId), eq(fileTable.status, FileStatus.Uploaded)))
+      .limit(1);
 
     if (!file) {
       return; // log here in the future
@@ -65,6 +69,11 @@ export const cvUploadParsingSubscription: SubscriptionConfig<CvUploadedEvent> = 
         .set({signedUrl, signedUrlExpiry: new Date(signedUrlExpiry)})
         .where(eq(fileTable.id, data.fileId));
     }
+
+    await db
+      .update(fileTable)
+      .set({status: FileStatus.Processing, updatedAt: new Date()})
+      .where(eq(fileTable.id, data.fileId));
 
     const parsedData = await parseResume(signedUrl!);
     const stringified = JSON.stringify(parsedData);
@@ -110,6 +119,11 @@ export const cvUploadParsingSubscription: SubscriptionConfig<CvUploadedEvent> = 
         headline: extractedData.personal_infos.current_profession,
       })
       .where(eq(userTable.id, file.userId));
+
+    await db
+      .update(fileTable)
+      .set({status: FileStatus.Processed, updatedAt: new Date()})
+      .where(eq(fileTable.id, data.fileId));
 
     console.log(`CV parsing complete for file id: ${data.fileId}`);
   },

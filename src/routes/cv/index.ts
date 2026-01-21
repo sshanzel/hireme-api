@@ -2,7 +2,7 @@ import {FastifyInstance} from 'fastify';
 import {withAuth, AuthenticatedRequest} from '../../utils/auth-helper.ts';
 import {publish} from '../../services/pubsub.ts';
 import {uploadFile} from '../../services/storage.ts';
-import {fileTable as fileTable, SourceType} from '../../db/schema/file.ts';
+import {FileStatus, fileTable as fileTable, SourceType} from '../../db/schema/file.ts';
 import {db} from '../../db/index.ts';
 import {BUCKET_NAME, UNPARSED_CVS_FOLDER} from '../../services/gcp.ts';
 import {userTable} from '../../db/schema/user.ts';
@@ -54,7 +54,7 @@ export default async function cvRoutes(fastify: FastifyInstance): Promise<void> 
             gcsBucket: BUCKET_NAME,
             gcsPath: finalPath,
             sizeInBytes: buffer.length,
-            status: 'uploaded',
+            status: FileStatus.Uploaded,
             tags: ['cv'],
             sourceType: SourceType.Resume,
           })

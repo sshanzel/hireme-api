@@ -9,6 +9,13 @@ export enum SourceType {
   Other = 'other',
 }
 
+export enum FileStatus {
+  Uploaded = 'uploaded',
+  Processing = 'processing',
+  Processed = 'processed',
+  Failed = 'failed',
+}
+
 export const fileTable = pgTable('file', {
   id: uuid().defaultRandom().primaryKey(),
   userId: uuid()
@@ -20,7 +27,7 @@ export const fileTable = pgTable('file', {
   gcsBucket: text().notNull(),
   gcsPath: text().notNull(),
   sizeInBytes: integer().notNull(),
-  status: text().notNull(),
+  status: text().$type<FileStatus>().notNull(),
   tags: text().array().notNull(),
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
