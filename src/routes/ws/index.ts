@@ -1,13 +1,5 @@
 import {FastifyInstance} from 'fastify';
-import {generateResponse} from '../../services/storyTeller.ts';
-import {
-  createStoryRawEvent,
-  deleteStoryRaw,
-  getOrCreateStoryRaw,
-  getStoryRawWithEvents,
-  updateStoryRaw,
-} from '../../services/storyRaw.ts';
-import {StoryRawEventType} from '../../db/schema/storyRawEvent.ts';
+import {StoryChatSession} from '../../services/storyChat.ts';
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
 
@@ -17,66 +9,41 @@ export default async function storyRawChatRoutes(fastify: FastifyInstance): Prom
     const {uid, storyId} = req.query as Record<string, string>;
 
     if (!uid) {
-      return connection.socket.close();
+      return connection.socket.close(4001, 'Missing user id');
     }
 
-    if (!allowedOrigins.includes(origin)) {
-      return connection.socket.close();
+    if (allowedOrigins.length > 0 && !allowedOrigins.includes(origin)) {
+      return connection.socket.close(4003, 'Origin not allowed');
     }
 
-    const entity = await getOrCreateStoryRaw(uid, storyId);
-
-    if (!entity) {
-      return connection.socket.close();
-    }
-
-    const {storyRaw: story, events} = entity;
-    const history = events.map(({content, type}) => ({content, type}));
-
-    connection.on('message', async (message: Buffer) => {
-      const {data} = JSON.parse(message.toString());
-
-      await createStoryRawEvent({
-        userId: uid,
-        content: data,
-        type: StoryRawEventType.User,
-        storyRawId: story.id,
-      });
-      history.push({content: data, type: StoryRawEventType.User});
-
-      const isNewConversation = history.length === 1;
-      const response = await generateResponse({history, isNewConversation});
-
-      await createStoryRawEvent({
-        userId: uid,
-        content: response.content,
-        type: StoryRawEventType.Assistant,
-        storyRawId: story.id,
-      });
-      history.push({content: response.content, type: StoryRawEventType.Assistant});
-
-      if (isNewConversation && (response.title || response.tags)) {
-        await updateStoryRaw(story.id, uid, {
-          title: response.title ?? undefined,
-          tags: response.tags ?? undefined,
-        });
+    let session: StoryChatSession;
+    try {
+      const result = await StoryChatSession.create(connection, uid, storyId);
+      if (!result) {
+        return connection.socket.close(4004, 'Story not found');
       }
+      session = result;
+    } catch (err) {
+      console.error('Failed to initialize session:', err);
+      return connection.socket.close(4002, 'Failed to initialize story');
+    }
 
-      connection.send(JSON.stringify(response));
+    session.sendConnected();
+
+    connection.on('message', async (rawMessage: Buffer) => {
+      await session.handleMessage(rawMessage.toString());
+    });
+
+    connection.on('error', (err: Error) => {
+      console.error('WebSocket error:', err);
     });
 
     connection.on('close', async () => {
-      const result = await getStoryRawWithEvents(story.id, uid);
-
-      if (!result) {
-        return;
+      try {
+        await session.cleanup();
+      } catch (err) {
+        console.error('Failed to cleanup session:', err);
       }
-
-      if (history.length > 0) {
-        return;
-      }
-
-      await deleteStoryRaw(story.id, uid);
     });
   });
 }

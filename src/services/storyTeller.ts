@@ -71,13 +71,11 @@ interface ChatMessage {
   type: StoryRawEventType;
 }
 
-interface GenerateResponseParams {
-  history: ChatMessage[];
-  isNewConversation: boolean;
-}
-
-export async function generateResponse({history, isNewConversation}: GenerateResponseParams): Promise<StoryResponse> {
+export async function generateResponse(history: ChatMessage[]): Promise<StoryResponse> {
   const openai = new OpenAI();
+
+  // New conversation = only 1 user message in history
+  const isNewConversation = history.filter(m => m.type === StoryRawEventType.User).length === 1;
 
   // Build the instruction with context about whether this is a new conversation
   const contextualInstruction = isNewConversation
