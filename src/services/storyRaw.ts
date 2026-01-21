@@ -14,11 +14,6 @@ export async function createStoryRaw(userId: string, experienceId?: string) {
   return storyRaws[0];
 }
 
-interface GetOrCreateStoryRawParams {
-  experienceId: string;
-  storyId: string;
-}
-
 export async function deleteStoryRaw(id: string, userId: string) {
   const existing = await getStoryRawById(id, userId);
 
@@ -26,6 +21,8 @@ export async function deleteStoryRaw(id: string, userId: string) {
     return false;
   }
 
+  // Delete events first (cascade)
+  await db.delete(storyRawEventTable).where(eq(storyRawEventTable.storyRawId, id));
   await db.delete(storyRawTable).where(eq(storyRawTable.id, id));
 
   return true;
@@ -127,48 +124,3 @@ export async function createStoryRawEvent({
   return {event: events[0], storyRaw: storyRawRecord};
 }
 
-export async function updateStoryRawEvent(id: string, userId: string, content: string) {
-  const eventRecord = await db
-    .select()
-    .from(storyRawEventTable)
-    .where(eq(storyRawEventTable.id, id));
-
-  if (!eventRecord[0]) {
-    return null;
-  }
-
-  const storyRawRecord = await getStoryRawById(eventRecord[0].storyRawId, userId);
-
-  if (!storyRawRecord) {
-    return null;
-  }
-
-  const updated = await db
-    .update(storyRawEventTable)
-    .set({content, updatedAt: new Date()})
-    .where(eq(storyRawEventTable.id, id))
-    .returning();
-
-  return updated[0];
-}
-
-export async function deleteStoryRawEvent(id: string, userId: string) {
-  const eventRecord = await db
-    .select()
-    .from(storyRawEventTable)
-    .where(eq(storyRawEventTable.id, id));
-
-  if (!eventRecord[0]) {
-    return false;
-  }
-
-  const storyRawRecord = await getStoryRawById(eventRecord[0].storyRawId, userId);
-
-  if (!storyRawRecord) {
-    return false;
-  }
-
-  await db.delete(storyRawEventTable).where(eq(storyRawEventTable.id, id));
-
-  return true;
-}
