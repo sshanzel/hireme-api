@@ -141,6 +141,13 @@
       "when": 1768996472140,
       "tag": "0019_flowery_carlie_cooper",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1769001331676,
+      "tag": "0020_bizarre_shinobi_shaw",
+      "breakpoints": true
     }
   ]
 }
