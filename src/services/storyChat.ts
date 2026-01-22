@@ -12,11 +12,13 @@ import {StoryRawEventType} from '../db/schema/storyRawEvent.ts';
 // Message types
 export enum IncomingMessageType {
   Chat = 'chat',
+  LoadStory = 'load_story',
 }
 
 export enum OutgoingMessageType {
   Connected = 'connected',
   Response = 'response',
+  StoryLoaded = 'story_loaded',
   Error = 'error',
 }
 
@@ -25,6 +27,7 @@ export enum ErrorCode {
   ParseError = 'PARSE_ERROR',
   GenerationError = 'GENERATION_ERROR',
   StorageError = 'STORAGE_ERROR',
+  NotFound = 'NOT_FOUND',
 }
 
 // Message interfaces
@@ -33,11 +36,29 @@ interface IncomingChatMessage {
   data: string;
 }
 
-type IncomingMessage = IncomingChatMessage;
+interface IncomingLoadStoryMessage {
+  type: IncomingMessageType.LoadStory;
+  storyRawId: string;
+}
+
+type IncomingMessage = IncomingChatMessage | IncomingLoadStoryMessage;
+
+interface StoryEvent {
+  content: string;
+  type: StoryRawEventType;
+  createdAt: Date;
+}
+
+interface StoryData {
+  id: string;
+  title: string | null;
+  tags: string[];
+  events: StoryEvent[];
+}
 
 interface OutgoingConnectedMessage {
   type: OutgoingMessageType.Connected;
-  storyId: string;
+  story: StoryData;
 }
 
 interface OutgoingResponseMessage {
@@ -51,7 +72,16 @@ interface OutgoingErrorMessage {
   code: ErrorCode;
 }
 
-type OutgoingMessage = OutgoingConnectedMessage | OutgoingResponseMessage | OutgoingErrorMessage;
+interface OutgoingStoryLoadedMessage {
+  type: OutgoingMessageType.StoryLoaded;
+  story: StoryData;
+}
+
+type OutgoingMessage =
+  | OutgoingConnectedMessage
+  | OutgoingResponseMessage
+  | OutgoingStoryLoadedMessage
+  | OutgoingErrorMessage;
 
 // Chat history item
 interface ChatHistoryItem {
@@ -63,18 +93,27 @@ export class StoryChatSession {
   private socket: WebSocket;
   private userId: string;
   private storyId: string;
+  private storyTitle: string | null;
+  private storyTags: string[];
   private history: ChatHistoryItem[];
+  private events: StoryEvent[];
 
   private constructor(
     socket: WebSocket,
     userId: string,
     storyId: string,
-    history: ChatHistoryItem[]
+    storyTitle: string | null,
+    storyTags: string[],
+    history: ChatHistoryItem[],
+    events: StoryEvent[]
   ) {
     this.socket = socket;
     this.userId = userId;
     this.storyId = storyId;
+    this.storyTitle = storyTitle;
+    this.storyTags = storyTags;
     this.history = history;
+    this.events = events;
   }
 
   static async create(
@@ -90,8 +129,17 @@ export class StoryChatSession {
 
     const {storyRaw, events} = entity;
     const history = events.map(({content, type}) => ({content, type}));
+    const storyEvents = events.map(({content, type, createdAt}) => ({content, type, createdAt}));
 
-    return new StoryChatSession(socket, userId, storyRaw.id, history);
+    return new StoryChatSession(
+      socket,
+      userId,
+      storyRaw.id,
+      storyRaw.title,
+      storyRaw.tags,
+      history,
+      storyEvents
+    );
   }
 
   // Socket communication
@@ -109,7 +157,12 @@ export class StoryChatSession {
   sendConnected(): void {
     this.send({
       type: OutgoingMessageType.Connected,
-      storyId: this.storyId,
+      story: {
+        id: this.storyId,
+        title: this.storyTitle,
+        tags: this.storyTags,
+        events: this.events,
+      },
     });
   }
 
@@ -126,20 +179,29 @@ export class StoryChatSession {
       return {error: 'Invalid JSON'};
     }
 
-    if (
-      !parsed.type ||
-      parsed.type !== IncomingMessageType.Chat ||
-      typeof parsed.data !== 'string'
-    ) {
-      return {error: 'Invalid message format. Expected: {type: "chat", data: string}'};
+    if (!parsed.type) {
+      return {error: 'Missing message type'};
     }
 
-    const content = parsed.data.trim();
-    if (!content) {
-      return {error: 'Message content cannot be empty'};
+    if (parsed.type === IncomingMessageType.Chat) {
+      if (typeof parsed.data !== 'string') {
+        return {error: 'Invalid message format. Expected: {type: "chat", data: string}'};
+      }
+      const content = parsed.data.trim();
+      if (!content) {
+        return {error: 'Message content cannot be empty'};
+      }
+      return {message: {type: IncomingMessageType.Chat, data: content}};
     }
 
-    return {message: {type: IncomingMessageType.Chat, data: content}};
+    if (parsed.type === IncomingMessageType.LoadStory) {
+      if (typeof parsed.storyRawId !== 'string') {
+        return {error: 'Invalid message format. Expected: {type: "load_story", storyRawId: string}'};
+      }
+      return {message: {type: IncomingMessageType.LoadStory, storyRawId: parsed.storyRawId}};
+    }
+
+    return {error: `Unknown message type: ${parsed.type}`};
   }
 
   // Chat operations
@@ -180,17 +242,40 @@ export class StoryChatSession {
     return response;
   }
 
-  // Main message handler
-  async handleMessage(rawMessage: string): Promise<void> {
-    const {message, error: parseError} = this.parseMessage(rawMessage);
+  // Load story handler
+  private async handleLoadStory(storyRawId: string): Promise<void> {
+    const result = await getStoryRawWithEvents(storyRawId, this.userId);
 
-    if (parseError || !message) {
-      this.sendError(parseError || 'Invalid message', ErrorCode.ParseError);
+    if (!result) {
+      this.sendError('Story not found', ErrorCode.NotFound);
       return;
     }
 
+    const {storyRaw, events} = result;
+
+    // Update session state
+    this.storyId = storyRaw.id;
+    this.storyTitle = storyRaw.title;
+    this.storyTags = storyRaw.tags;
+    this.history = events.map(({content, type}) => ({content, type}));
+    this.events = events.map(({content, type, createdAt}) => ({content, type, createdAt}));
+
+    // Send story data to client
+    this.send({
+      type: OutgoingMessageType.StoryLoaded,
+      story: {
+        id: this.storyId,
+        title: this.storyTitle,
+        tags: this.storyTags,
+        events: this.events,
+      },
+    });
+  }
+
+  // Chat handler
+  private async handleChat(content: string): Promise<void> {
     try {
-      await this.saveMessage(message.data, StoryRawEventType.User);
+      await this.saveMessage(content, StoryRawEventType.User);
     } catch (err) {
       console.error('Failed to save user message:', err);
       this.sendError('Failed to save message', ErrorCode.StorageError);
@@ -207,6 +292,25 @@ export class StoryChatSession {
     }
 
     this.sendResponse(response);
+  }
+
+  // Main message handler
+  async handleMessage(rawMessage: string): Promise<void> {
+    const {message, error: parseError} = this.parseMessage(rawMessage);
+
+    if (parseError || !message) {
+      this.sendError(parseError || 'Invalid message', ErrorCode.ParseError);
+      return;
+    }
+
+    switch (message.type) {
+      case IncomingMessageType.Chat:
+        await this.handleChat(message.data);
+        break;
+      case IncomingMessageType.LoadStory:
+        await this.handleLoadStory(message.storyRawId);
+        break;
+    }
   }
 
   // Cleanup
