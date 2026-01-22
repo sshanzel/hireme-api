@@ -1,17 +1,18 @@
 #!/usr/bin/env npx tsx
 /**
- * Remap user_parsed_archive to verify mapping logic
- * Usage: npx tsx bin/remap-archive.ts [userId]
+ * Remap user_parsed_archive to verify and apply mapping logic
+ * Usage: npx tsx bin/remap-archive.ts <userId> [--apply]
  *
- * If userId is provided, only that user's archive is processed.
- * Otherwise, all archives are processed.
+ * Without --apply: Preview the remapped data (dry run)
+ * With --apply: Actually update the database with remapped data
  */
 import 'dotenv/config';
 import {eq} from 'drizzle-orm';
 import {db} from '../src/db/index.ts';
 import {userParsedArchive} from '../src/db/schema/userParsedArchive.ts';
+import {experienceTable} from '../src/db/schema/experience.ts';
+import {userTable} from '../src/db/schema/user.ts';
 import {
-  parseDate,
   mapWorkExperience,
   mapEducation,
   mapUserInfo,
@@ -31,12 +32,17 @@ function printSubSection(title: string) {
 }
 
 async function main() {
-  const userId = process.argv[2];
+  const args = process.argv.slice(2);
+  const applyFlag = args.includes('--apply');
+  const userId = args.find(arg => !arg.startsWith('--'));
 
   if (!userId) {
-    console.log('No userId provided, processing all archives...\n');
+    console.error('Usage: npx tsx bin/remap-archive.ts <userId> [--apply]');
+    console.error('  --apply    Apply changes to database (without this flag, it\'s a dry run)');
     process.exit(1);
   }
+
+  console.log(applyFlag ? '🔧 APPLY MODE: Changes will be saved to database\n' : '👀 DRY RUN: No changes will be made\n');
 
   const [archive] = await db
     .select()
@@ -47,8 +53,6 @@ async function main() {
     console.error(`No archive found for user: ${userId}`);
     process.exit(1);
   }
-
-  console.log(`Found 1 archive to process\n`);
 
   printSection(`USER: ${archive.userId}`);
   console.log(`Archive updated: ${archive.updatedAt}`);
@@ -67,150 +71,71 @@ async function main() {
     process.exit(1);
   }
 
-  // Personal Info
-  printSubSection('RAW: Personal Info');
-  const personalInfos = extractedData.personal_infos;
-  console.log('Name:', JSON.stringify(personalInfos.name, null, 2));
-  console.log('Phones:', personalInfos.phones);
-  console.log('Emails:', personalInfos.mails);
-  console.log('URLs:', personalInfos.urls);
-  console.log('Self Summary:', personalInfos.self_summary?.substring(0, 200) + '...');
-  console.log('Current Profession:', personalInfos.current_profession);
-  console.log('Address:', JSON.stringify(personalInfos.address, null, 2));
-
-  printSubSection('MAPPED: User Info (using mapUserInfo)');
+  // Map user info
+  printSubSection('MAPPED: User Info');
   const mappedUser = mapUserInfo(extractedData);
   console.log(JSON.stringify(mappedUser, null, 2));
 
-  // Work Experience
-  printSubSection('RAW: Work Experience');
+  // Map work experiences
+  printSubSection('MAPPED: Work Experiences');
   const workEntries = extractedData.work_experience?.entries || [];
-  console.log(`Total entries: ${workEntries.length}`);
-  console.log(`Total years: ${extractedData.work_experience?.total_years_experience}`);
-  workEntries.forEach((exp, i) => {
-    console.log(`\n[${i + 1}] ${exp.title} at ${exp.company || 'N/A'}`);
-    console.log(`    Period: ${exp.start_date || 'N/A'} - ${exp.end_date || 'Present'}`);
-    console.log(`    Type: ${exp.type}`);
-    console.log(`    Location: ${exp.location?.formatted_location || 'N/A'}`);
-    console.log(`    Description: ${exp.description?.substring(0, 150) || 'N/A'}...`);
-  });
-
-  printSubSection('MAPPED: Work Experiences (using mapWorkExperience)');
   const mappedWork = workEntries.map(exp => mapWorkExperience(archive.userId, exp));
   mappedWork.forEach((exp, i) => {
     console.log(`\n[${i + 1}] ${exp.title}`);
     console.log(`    Organization: ${exp.organization || 'N/A'}`);
-    const startDate =
-      exp.startDate instanceof Date ? exp.startDate.toISOString().split('T')[0] : 'N/A';
-    const endDate =
-      exp.endDate instanceof Date ? exp.endDate.toISOString().split('T')[0] : 'Present';
+    const startDate = exp.startDate instanceof Date ? exp.startDate.toISOString().split('T')[0] : 'N/A';
+    const endDate = exp.endDate instanceof Date ? exp.endDate.toISOString().split('T')[0] : 'Present';
     console.log(`    Period: ${startDate} - ${endDate}`);
-    console.log(`    Description: ${exp.description?.substring(0, 100) || 'N/A'}...`);
+    console.log(`    Description: ${exp.description?.substring(0, 150) || 'N/A'}...`);
   });
 
-  // Education
-  printSubSection('RAW: Education');
+  // Map education
+  printSubSection('MAPPED: Education');
   const eduEntries = extractedData.education?.entries || [];
-  console.log(`Total entries: ${eduEntries.length}`);
-  eduEntries.forEach((edu, i) => {
-    console.log(`\n[${i + 1}] ${edu.title}`);
-    console.log(`    Establishment: ${edu.establishment || 'N/A'}`);
-    console.log(`    Period: ${edu.start_date || 'N/A'} - ${edu.end_date || 'N/A'}`);
-    console.log(`    Accreditation: ${edu.accreditation || 'N/A'}`);
-    console.log(`    Location: ${edu.location?.formatted_location || 'N/A'}`);
-    console.log(`    Description: ${edu.description || 'N/A'}`);
-  });
-
-  printSubSection('MAPPED: Education (using mapEducation)');
   const mappedEdu = eduEntries.map(edu => mapEducation(archive.userId, edu));
   mappedEdu.forEach((edu, i) => {
     console.log(`\n[${i + 1}] ${edu.title}`);
     console.log(`    Organization: ${edu.organization || 'N/A'}`);
-    const startDate =
-      edu.startDate instanceof Date ? edu.startDate.toISOString().split('T')[0] : 'N/A';
+    const startDate = edu.startDate instanceof Date ? edu.startDate.toISOString().split('T')[0] : 'N/A';
     const endDate = edu.endDate instanceof Date ? edu.endDate.toISOString().split('T')[0] : 'N/A';
     console.log(`    Period: ${startDate} - ${endDate}`);
     console.log(`    Description: ${edu.description || 'N/A'}`);
   });
 
-  // Skills (currently not mapped to experiences)
-  printSubSection('RAW: Skills (NOT MAPPED)');
-  const skills = extractedData.skills || [];
-  console.log(`Total skills: ${skills.length}`);
-  skills.forEach(skill => {
-    console.log(`  - ${skill.name} (${skill.type})`);
-  });
-
-  // Languages
-  printSubSection('RAW: Languages (NOT MAPPED)');
-  const languages = extractedData.languages || [];
-  console.log(`Total languages: ${languages.length}`);
-  languages.forEach((lang: any) => {
-    console.log(`  - ${JSON.stringify(lang)}`);
-  });
-
-  // Certifications
-  printSubSection('RAW: Certifications (NOT MAPPED)');
-  const certs = extractedData.certifications || [];
-  console.log(`Total certifications: ${certs.length}`);
-  certs.forEach((cert: any) => {
-    console.log(`  - ${JSON.stringify(cert)}`);
-  });
-
   // Summary
-  printSubSection('MAPPING SUMMARY');
-  console.log(`User fields mapped: name, links, summary, headline`);
-  console.log(`Work experiences: ${workEntries.length} raw -> ${mappedWork.length} mapped`);
-  console.log(`Education: ${eduEntries.length} raw -> ${mappedEdu.length} mapped`);
-  console.log(`Skills: ${skills.length} (not mapped to experience.skills)`);
-  console.log(`Languages: ${languages.length} (not mapped)`);
-  console.log(`Certifications: ${certs.length} (not mapped)`);
+  printSubSection('SUMMARY');
+  console.log(`Work experiences: ${mappedWork.length}`);
+  console.log(`Education: ${mappedEdu.length}`);
 
-  // Fields potentially missing in mapping
-  printSubSection('POTENTIAL MISSING MAPPINGS');
-  const missingFields: string[] = [];
+  if (applyFlag) {
+    printSubSection('APPLYING CHANGES');
 
-  // Check if establishment is being mapped correctly now
-  const eduWithEstablishment = eduEntries.filter(e => e.establishment);
-  const mappedEduWithOrg = mappedEdu.filter(e => e.organization);
-  if (eduWithEstablishment.length !== mappedEduWithOrg.length) {
-    missingFields.push('Education: establishment not properly mapped to organization');
-  }
+    // Clear existing experiences
+    await db.delete(experienceTable).where(eq(experienceTable.userId, archive.userId));
+    console.log('Cleared existing experiences');
 
-  if (eduEntries.some(e => e.accreditation)) {
-    missingFields.push('Education: accreditation field not captured');
-  }
-  if (eduEntries.some(e => e.gpa)) {
-    missingFields.push('Education: gpa field not captured');
-  }
-  if (workEntries.some(e => e.location?.formatted_location)) {
-    missingFields.push('Work: location not captured');
-  }
-  if (workEntries.some(e => e.type)) {
-    missingFields.push('Work: type (full-time/contract/etc) not captured');
-  }
-  if (workEntries.some(e => e.industry)) {
-    missingFields.push('Work: industry not captured');
-  }
-  if (skills.length > 0) {
-    missingFields.push('Skills: could be mapped to experience.skills array');
-  }
-  if (personalInfos.phones?.length > 0) {
-    missingFields.push('Personal: phones not mapped to user');
-  }
-  if (personalInfos.mails?.length > 0) {
-    missingFields.push('Personal: additional emails not mapped');
-  }
+    // Insert work experiences
+    if (mappedWork.length > 0) {
+      await db.insert(experienceTable).values(mappedWork);
+      console.log(`Inserted ${mappedWork.length} work experiences`);
+    }
 
-  if (missingFields.length === 0) {
-    console.log('All available fields are being mapped correctly.');
+    // Insert education
+    if (mappedEdu.length > 0) {
+      await db.insert(experienceTable).values(mappedEdu);
+      console.log(`Inserted ${mappedEdu.length} education records`);
+    }
+
+    // Update user info
+    await db.update(userTable).set(mappedUser).where(eq(userTable.id, archive.userId));
+    console.log('Updated user info');
+
+    console.log('\n✅ Changes applied successfully!');
   } else {
-    missingFields.forEach(f => console.log(`  - ${f}`));
+    printSubSection('DRY RUN COMPLETE');
+    console.log('Run with --apply to save changes to database');
   }
 
-  console.log('\n' + '='.repeat(60));
-  console.log('REMAP COMPLETE');
-  console.log('='.repeat(60));
   process.exit(0);
 }
 

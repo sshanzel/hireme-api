@@ -7,6 +7,7 @@ import {getSignedUrl} from '../services/storage.ts';
 import {parseResume, type Entry, type Entry2, type ExtractedData} from '../services/parser.ts';
 import {userParsedArchive} from '../db/schema/userParsedArchive.ts';
 import {userTable} from '../db/schema/user.ts';
+import {sanitizeBullets} from '../utils/sanitize.ts';
 
 interface CvUploadedEvent {
   fileId: string;
@@ -18,6 +19,18 @@ export function parseDate(dateStr?: string): Date | null {
   return isNaN(parsed.getTime()) ? null : parsed;
 }
 
+const formatDescription = (desc: string) => {
+  const sanitized = sanitizeBullets(desc);
+  const result = sanitized
+    .split('•')
+    .filter(Boolean)
+    .map(str => `• ${str.trim()}`)
+    .join('\n\n');
+  console.log('Sanitized Description:', result);
+
+  return result;
+};
+
 export function mapWorkExperience(userId: string, exp: Entry2) {
   return {
     userId,
@@ -26,7 +39,7 @@ export function mapWorkExperience(userId: string, exp: Entry2) {
     organization: exp.company || null,
     startDate: parseDate(exp.start_date) || new Date(),
     endDate: parseDate(exp.end_date),
-    description: exp.description || null,
+    description: exp.description ? formatDescription(exp.description) : null,
     skills: null,
   };
 }
@@ -39,7 +52,7 @@ export function mapEducation(userId: string, edu: Entry) {
     organization: edu.establishment || null,
     startDate: parseDate(edu.start_date) || new Date(),
     endDate: parseDate(edu.end_date),
-    description: edu.description || null,
+    description: edu.description ? formatDescription(edu.description) : null,
     skills: null,
   };
 }
@@ -56,7 +69,7 @@ export function mapUserInfo(extractedData: ExtractedData): MappedUserInfo {
   return {
     links: personalInfos.urls || [],
     name: personalInfos.name?.raw_name || undefined,
-    summary: personalInfos.self_summary || null,
+    summary: personalInfos.self_summary ? sanitizeBullets(personalInfos.self_summary) : null,
     headline: personalInfos.current_profession || null,
   };
 }
@@ -128,10 +141,7 @@ export const cvUploadParsingSubscription: SubscriptionConfig<CvUploadedEvent> = 
     }
 
     const userInfo = mapUserInfo(extractedData);
-    await db
-      .update(userTable)
-      .set(userInfo)
-      .where(eq(userTable.id, file.userId));
+    await db.update(userTable).set(userInfo).where(eq(userTable.id, file.userId));
 
     await db
       .update(fileTable)
