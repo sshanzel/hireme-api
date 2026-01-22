@@ -49,6 +49,12 @@ interface StoryEvent {
   createdAt: Date;
 }
 
+interface StoryRawData {
+  id: string;
+  title: string | null;
+  tags: string[] | null;
+}
+
 interface StoryData {
   id: string;
   title: string | null;
@@ -83,36 +89,21 @@ type OutgoingMessage =
   | OutgoingStoryLoadedMessage
   | OutgoingErrorMessage;
 
-// Chat history item
-interface ChatHistoryItem {
-  content: string;
-  role: StoryRawEventRole;
-}
-
 export class StoryChatSession {
   private socket: WebSocket;
   private userId: string;
-  private storyId: string;
-  private storyTitle: string | null;
-  private storyTags: string[];
-  private history: ChatHistoryItem[];
+  private storyRaw: StoryRawData;
   private events: StoryEvent[];
 
   private constructor(
     socket: WebSocket,
     userId: string,
-    storyId: string,
-    storyTitle: string | null,
-    storyTags: string[],
-    history: ChatHistoryItem[],
+    storyRaw: StoryRawData,
     events: StoryEvent[]
   ) {
     this.socket = socket;
     this.userId = userId;
-    this.storyId = storyId;
-    this.storyTitle = storyTitle;
-    this.storyTags = storyTags;
-    this.history = history;
+    this.storyRaw = storyRaw;
     this.events = events;
   }
 
@@ -128,21 +119,12 @@ export class StoryChatSession {
     }
 
     const {storyRaw, events} = entity;
-    const history = events.map(({content, role}) => ({content, role}));
-    const storyEvents = events.map(({content, role, createdAt}) => ({
-      content,
-      role,
-      createdAt,
-    }));
 
     return new StoryChatSession(
       socket,
       userId,
-      storyRaw.id,
-      storyRaw.title,
-      storyRaw.tags,
-      history,
-      storyEvents
+      {id: storyRaw.id, title: storyRaw.title, tags: storyRaw.tags},
+      events.map(({content, role, createdAt}) => ({content, role, createdAt}))
     );
   }
 
@@ -158,15 +140,19 @@ export class StoryChatSession {
     this.send({type: OutgoingMessageType.Error, error, code});
   }
 
+  private getStoryData(): StoryData {
+    return {
+      id: this.storyRaw.id,
+      title: this.storyRaw.title,
+      tags: this.storyRaw.tags,
+      events: this.events,
+    };
+  }
+
   sendConnected(): void {
     this.send({
       type: OutgoingMessageType.Connected,
-      story: {
-        id: this.storyId,
-        title: this.storyTitle,
-        tags: this.storyTags,
-        events: this.events,
-      },
+      story: this.getStoryData(),
     });
   }
 
@@ -211,35 +197,38 @@ export class StoryChatSession {
   }
 
   // Chat operations
-  private async saveMessage(content: string, role: StoryRawEventRole): Promise<void> {
-    await createStoryRawEvent({
+  private async saveEvent(content: string, role: StoryRawEventRole): Promise<void> {
+    const {event} = await createStoryRawEvent({
       userId: this.userId,
       content,
       role,
-      storyRawId: this.storyId,
+      storyRawId: this.storyRaw.id,
     });
-    this.history.push({content, role});
+    this.events.push({content, role, createdAt: event.createdAt});
   }
 
   private async generateAndSaveResponse(): Promise<StoryResponse> {
-    const response = await generateResponse(this.history);
+    const response = await generateResponse(this.events);
 
     // Save assistant response (non-blocking on failure)
     try {
-      await this.saveMessage(response.content, StoryRawEventRole.Assistant);
+      await this.saveEvent(response.content, StoryRawEventRole.Assistant);
     } catch (err) {
       console.error('Failed to save assistant response:', err);
     }
 
     // Update title/tags for new conversations (first user message)
     const isNewConversation =
-      this.history.filter(m => m.role === StoryRawEventRole.User).length === 1;
+      this.events.filter(e => e.role === StoryRawEventRole.User).length === 1;
     if (isNewConversation && (response.title || response.tags)) {
       try {
-        await updateStoryRaw(this.storyId, this.userId, {
+        await updateStoryRaw(this.storyRaw.id, this.userId, {
           title: response.title ?? undefined,
           tags: response.tags ?? undefined,
         });
+        // Update local state
+        if (response.title) this.storyRaw.title = response.title;
+        if (response.tags) this.storyRaw.tags = response.tags;
       } catch (err) {
         console.error('Failed to update story metadata:', err);
       }
@@ -260,28 +249,20 @@ export class StoryChatSession {
     const {storyRaw, events} = result;
 
     // Update session state
-    this.storyId = storyRaw.id;
-    this.storyTitle = storyRaw.title;
-    this.storyTags = storyRaw.tags;
-    this.history = events.map(({content, role}) => ({content, role}));
+    this.storyRaw = {id: storyRaw.id, title: storyRaw.title, tags: storyRaw.tags};
     this.events = events.map(({content, role, createdAt}) => ({content, role, createdAt}));
 
     // Send story data to client
     this.send({
       type: OutgoingMessageType.StoryLoaded,
-      story: {
-        id: this.storyId,
-        title: this.storyTitle,
-        tags: this.storyTags,
-        events: this.events,
-      },
+      story: this.getStoryData(),
     });
   }
 
   // Chat handler
   private async handleChat(content: string): Promise<void> {
     try {
-      await this.saveMessage(content, StoryRawEventRole.User);
+      await this.saveEvent(content, StoryRawEventRole.User);
     } catch (err) {
       console.error('Failed to save user message:', err);
       this.sendError('Failed to save message', ErrorCode.StorageError);
@@ -321,13 +302,13 @@ export class StoryChatSession {
 
   // Cleanup
   async cleanup(): Promise<void> {
-    if (this.history.length > 0) {
+    if (this.events.length > 0) {
       return;
     }
 
-    const result = await getStoryRawWithEvents(this.storyId, this.userId);
+    const result = await getStoryRawWithEvents(this.storyRaw.id, this.userId);
     if (result && result.events.length === 0) {
-      await deleteStoryRaw(this.storyId, this.userId);
+      await deleteStoryRaw(this.storyRaw.id, this.userId);
     }
   }
 }
