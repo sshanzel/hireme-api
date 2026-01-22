@@ -1,6 +1,6 @@
 import {db} from '../db/index.ts';
 import {userTable, experienceTable, storyRawTable, storyRawEventTable} from '../db/schema/index.ts';
-import {eq, exists, and, isNull} from 'drizzle-orm';
+import {eq, exists, and, isNull, desc} from 'drizzle-orm';
 
 export async function getFullProfile(userId: string) {
   // Get user
@@ -37,7 +37,7 @@ export async function getFullProfile(userId: string) {
         },
       },
     },
-    orderBy: experienceTable.startDate,
+    orderBy: desc(experienceTable.startDate),
   });
 
   // Get untagged stories (no experienceId) that have at least one event
