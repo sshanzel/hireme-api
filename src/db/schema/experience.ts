@@ -1,5 +1,7 @@
+import {relations} from 'drizzle-orm';
 import {pgTable, uuid, text, timestamp} from 'drizzle-orm/pg-core';
 import {userTable} from './user.ts';
+import {storyRawTable} from './storyRaw.ts';
 
 export enum ExperienceType {
   Work = 'work',
@@ -24,3 +26,7 @@ export const experienceTable = pgTable('experience', {
 });
 
 export type Experience = typeof experienceTable.$inferSelect;
+
+export const experienceRelations = relations(experienceTable, ({many}) => ({
+  stories: many(storyRawTable),
+}));

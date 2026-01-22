@@ -1,9 +1,13 @@
 import {FastifyInstance, FastifyReply} from 'fastify';
 import {withAuth, AuthenticatedRequest} from '../../utils/auth-helper.ts';
-import {getStoryRawsByUser, deleteStoryRaw} from '../../services/storyRaw.ts';
+import {getStoryRawsByUser, deleteStoryRaw, updateStoryRaw} from '../../services/storyRaw.ts';
 
 interface IdParams {
   id: string;
+}
+
+interface TagExperienceBody {
+  experienceId: string | null;
 }
 
 export default async function storyRawRoutes(fastify: FastifyInstance): Promise<void> {
@@ -26,6 +30,22 @@ export default async function storyRawRoutes(fastify: FastifyInstance): Promise<
       }
 
       return reply.status(200).send({message: 'StoryRaw deleted successfully'});
+    })
+  );
+
+  fastify.patch<{Params: IdParams; Body: TagExperienceBody}>(
+    '/story-raws/:id/experience',
+    withAuth(async (request: AuthenticatedRequest, reply: FastifyReply) => {
+      const {id} = request.params as IdParams;
+      const {experienceId} = request.body as TagExperienceBody;
+
+      const updated = await updateStoryRaw(id, request.user.id, {experienceId});
+
+      if (!updated) {
+        return reply.status(404).send({error: 'StoryRaw not found'});
+      }
+
+      return reply.status(200).send({storyRaw: updated});
     })
   );
 }

@@ -69,6 +69,7 @@ export async function getOrCreateStoryRaw(userId: string, storyId?: string) {
 interface UpdateStoryRawParams {
   title?: string;
   tags?: string[];
+  experienceId?: string | null;
 }
 
 export async function updateStoryRaw(id: string, userId: string, params: UpdateStoryRawParams) {
@@ -86,6 +87,10 @@ export async function updateStoryRaw(id: string, userId: string, params: UpdateS
 
   if (params.tags !== undefined) {
     updateData.tags = params.tags;
+  }
+
+  if (params.experienceId !== undefined) {
+    updateData.experienceId = params.experienceId;
   }
 
   const updated = await db
