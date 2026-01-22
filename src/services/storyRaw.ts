@@ -1,5 +1,5 @@
 import {db} from '../db/index.ts';
-import {storyRawTable, storyRawEventTable, StoryRawEventType} from '../db/schema/index.ts';
+import {storyRawTable, storyRawEventTable, StoryRawEventRole} from '../db/schema/index.ts';
 import {eq, and} from 'drizzle-orm';
 
 export async function createStoryRaw(userId: string, experienceId?: string) {
@@ -105,14 +105,14 @@ export async function updateStoryRaw(id: string, userId: string, params: UpdateS
 interface CreateStoryRawEventParams {
   userId: string;
   content: string;
-  type: StoryRawEventType;
+  role: StoryRawEventRole;
   storyRawId: string;
 }
 
 export async function createStoryRawEvent({
   userId,
   content,
-  type,
+  role,
   storyRawId,
 }: CreateStoryRawEventParams) {
   const storyRawRecord = await getStoryRawById(storyRawId, userId);
@@ -122,10 +122,9 @@ export async function createStoryRawEvent({
     .values({
       storyRawId: storyRawRecord.id,
       content,
-      type,
+      role,
     })
     .returning();
 
   return {event: events[0], storyRaw: storyRawRecord};
 }
-

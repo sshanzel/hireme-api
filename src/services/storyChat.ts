@@ -7,7 +7,7 @@ import {
   getStoryRawWithEvents,
   updateStoryRaw,
 } from './storyRaw.ts';
-import {StoryRawEventType} from '../db/schema/storyRawEvent.ts';
+import {StoryRawEventRole} from '../db/schema/storyRawEvent.ts';
 
 // Message types
 export enum IncomingMessageType {
@@ -45,14 +45,14 @@ type IncomingMessage = IncomingChatMessage | IncomingLoadStoryMessage;
 
 interface StoryEvent {
   content: string;
-  type: StoryRawEventType;
+  role: StoryRawEventRole;
   createdAt: Date;
 }
 
 interface StoryData {
   id: string;
   title: string | null;
-  tags: string[];
+  tags: string[] | null;
   events: StoryEvent[];
 }
 
@@ -86,7 +86,7 @@ type OutgoingMessage =
 // Chat history item
 interface ChatHistoryItem {
   content: string;
-  type: StoryRawEventType;
+  role: StoryRawEventRole;
 }
 
 export class StoryChatSession {
@@ -128,8 +128,12 @@ export class StoryChatSession {
     }
 
     const {storyRaw, events} = entity;
-    const history = events.map(({content, type}) => ({content, type}));
-    const storyEvents = events.map(({content, type, createdAt}) => ({content, type, createdAt}));
+    const history = events.map(({content, role}) => ({content, role}));
+    const storyEvents = events.map(({content, role, createdAt}) => ({
+      content,
+      role,
+      createdAt,
+    }));
 
     return new StoryChatSession(
       socket,
@@ -196,7 +200,9 @@ export class StoryChatSession {
 
     if (parsed.type === IncomingMessageType.LoadStory) {
       if (typeof parsed.storyRawId !== 'string') {
-        return {error: 'Invalid message format. Expected: {type: "load_story", storyRawId: string}'};
+        return {
+          error: 'Invalid message format. Expected: {type: "load_story", storyRawId: string}',
+        };
       }
       return {message: {type: IncomingMessageType.LoadStory, storyRawId: parsed.storyRawId}};
     }
@@ -205,14 +211,14 @@ export class StoryChatSession {
   }
 
   // Chat operations
-  private async saveMessage(content: string, type: StoryRawEventType): Promise<void> {
+  private async saveMessage(content: string, role: StoryRawEventRole): Promise<void> {
     await createStoryRawEvent({
       userId: this.userId,
       content,
-      type,
+      role,
       storyRawId: this.storyId,
     });
-    this.history.push({content, type});
+    this.history.push({content, role});
   }
 
   private async generateAndSaveResponse(): Promise<StoryResponse> {
@@ -220,14 +226,14 @@ export class StoryChatSession {
 
     // Save assistant response (non-blocking on failure)
     try {
-      await this.saveMessage(response.content, StoryRawEventType.Assistant);
+      await this.saveMessage(response.content, StoryRawEventRole.Assistant);
     } catch (err) {
       console.error('Failed to save assistant response:', err);
     }
 
     // Update title/tags for new conversations (first user message)
     const isNewConversation =
-      this.history.filter(m => m.type === StoryRawEventType.User).length === 1;
+      this.history.filter(m => m.role === StoryRawEventRole.User).length === 1;
     if (isNewConversation && (response.title || response.tags)) {
       try {
         await updateStoryRaw(this.storyId, this.userId, {
@@ -257,8 +263,8 @@ export class StoryChatSession {
     this.storyId = storyRaw.id;
     this.storyTitle = storyRaw.title;
     this.storyTags = storyRaw.tags;
-    this.history = events.map(({content, type}) => ({content, type}));
-    this.events = events.map(({content, type, createdAt}) => ({content, type, createdAt}));
+    this.history = events.map(({content, role}) => ({content, role}));
+    this.events = events.map(({content, role, createdAt}) => ({content, role, createdAt}));
 
     // Send story data to client
     this.send({
@@ -275,7 +281,7 @@ export class StoryChatSession {
   // Chat handler
   private async handleChat(content: string): Promise<void> {
     try {
-      await this.saveMessage(content, StoryRawEventType.User);
+      await this.saveMessage(content, StoryRawEventRole.User);
     } catch (err) {
       console.error('Failed to save user message:', err);
       this.sendError('Failed to save message', ErrorCode.StorageError);
