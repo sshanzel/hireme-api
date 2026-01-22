@@ -4,7 +4,7 @@ import {FileStatus, fileTable} from '../db/schema/file.ts';
 import {experienceTable, ExperienceType} from '../db/schema/experience.ts';
 import type {SubscriptionConfig} from './types.ts';
 import {getSignedUrl} from '../services/storage.ts';
-import {parseResume, type Entry, type Entry2} from '../services/parser.ts';
+import {parseResume, type Entry, type Entry2, type ExtractedData} from '../services/parser.ts';
 import {userParsedArchive} from '../db/schema/userParsedArchive.ts';
 import {userTable} from '../db/schema/user.ts';
 
@@ -12,13 +12,13 @@ interface CvUploadedEvent {
   fileId: string;
 }
 
-function parseDate(dateStr?: string): Date | null {
+export function parseDate(dateStr?: string): Date | null {
   if (!dateStr) return null;
   const parsed = new Date(dateStr);
   return isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function mapWorkExperience(userId: string, exp: Entry2) {
+export function mapWorkExperience(userId: string, exp: Entry2) {
   return {
     userId,
     type: ExperienceType.Work,
@@ -31,16 +31,33 @@ function mapWorkExperience(userId: string, exp: Entry2) {
   };
 }
 
-function mapEducation(userId: string, edu: Entry) {
+export function mapEducation(userId: string, edu: Entry) {
   return {
     userId,
     type: ExperienceType.Education,
     title: edu.title,
-    organization: null,
+    organization: edu.establishment || null,
     startDate: parseDate(edu.start_date) || new Date(),
     endDate: parseDate(edu.end_date),
     description: edu.description || null,
     skills: null,
+  };
+}
+
+interface MappedUserInfo {
+  links: string[];
+  name: string | undefined;
+  summary: string | null;
+  headline: string | null;
+}
+
+export function mapUserInfo(extractedData: ExtractedData): MappedUserInfo {
+  const personalInfos = extractedData.personal_infos;
+  return {
+    links: personalInfos.urls || [],
+    name: personalInfos.name?.raw_name || undefined,
+    summary: personalInfos.self_summary || null,
+    headline: personalInfos.current_profession || null,
   };
 }
 
@@ -110,14 +127,10 @@ export const cvUploadParsingSubscription: SubscriptionConfig<CvUploadedEvent> = 
       console.log(`Inserted ${educationRecords.length} education records`);
     }
 
+    const userInfo = mapUserInfo(extractedData);
     await db
       .update(userTable)
-      .set({
-        links: extractedData.personal_infos.urls || [],
-        name: extractedData.personal_infos.name.raw_name,
-        summary: extractedData.personal_infos.self_summary,
-        headline: extractedData.personal_infos.current_profession,
-      })
+      .set(userInfo)
       .where(eq(userTable.id, file.userId));
 
     await db
