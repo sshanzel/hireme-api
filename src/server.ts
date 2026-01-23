@@ -73,6 +73,7 @@ const shutdown = async () => {
 
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
+process.on('SIGHUP', shutdown);
 
 fastify.register(sockets, {prefix: '/ws'});
 
