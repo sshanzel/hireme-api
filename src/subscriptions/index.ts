@@ -2,8 +2,12 @@ import {Message} from '@google-cloud/pubsub';
 import {subscribe} from '../services/pubsub.ts';
 import type {SubscriptionConfig} from './types.ts';
 import {cvUploadParsingSubscription} from './cvUploadParsing.ts';
+import {storyCanonicalizationSubscription} from './storyCanonicalization.ts';
 
-const subscriptions: SubscriptionConfig<any>[] = [cvUploadParsingSubscription];
+const subscriptions: SubscriptionConfig[] = [
+  cvUploadParsingSubscription,
+  storyCanonicalizationSubscription,
+];
 
 export async function registerSubscriptions(): Promise<void> {
   for (const config of subscriptions) {
