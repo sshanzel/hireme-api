@@ -1,4 +1,5 @@
 import {FastifyInstance} from 'fastify';
+import type {HeartbeatSocket} from '../../types/websocket.ts';
 import {StoryChatSession} from '../../services/storyChat.ts';
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
@@ -8,37 +9,44 @@ export default async function storyRawChatRoutes(fastify: FastifyInstance): Prom
     const origin = req.headers.origin || '';
     const {uid, storyId} = req.query as Record<string, string>;
 
+    const socket = connection as HeartbeatSocket;
+    socket.isAlive = true;
+    socket.on('pong', () => {
+      socket.isAlive = true;
+    });
+
     if (!uid) {
-      return connection.socket.close(4001, 'Missing user id');
+      return socket.close(4001, 'Missing user id');
     }
 
     if (allowedOrigins.length > 0 && !allowedOrigins.includes(origin)) {
-      return connection.socket.close(4003, 'Origin not allowed');
+      return socket.close(4003, 'Origin not allowed');
     }
 
     let session: StoryChatSession;
     try {
-      const result = await StoryChatSession.create(connection, uid, storyId);
+      const result = await StoryChatSession.create(socket, uid, storyId);
       if (!result) {
-        return connection.socket.close(4004, 'Story not found');
+        return socket.close(4004, 'Story not found');
       }
       session = result;
     } catch (err) {
       console.error('Failed to initialize session:', err);
-      return connection.socket.close(4002, 'Failed to initialize story');
+      return socket.close(4002, 'Failed to initialize story');
     }
 
     session.sendConnected();
 
-    connection.on('message', async (rawMessage: Buffer) => {
+    socket.on('message', async (rawMessage: Buffer) => {
+      socket.isAlive = true;
       await session.handleMessage(rawMessage.toString());
     });
 
-    connection.on('error', (err: Error) => {
+    socket.on('error', (err: Error) => {
       console.error('WebSocket error:', err);
     });
 
-    connection.on('close', async () => {
+    socket.on('close', async () => {
       try {
         await session.cleanup();
       } catch (err) {
