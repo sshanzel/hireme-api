@@ -1,5 +1,5 @@
 import {pgTable, uuid, text, timestamp, pgEnum, jsonb} from 'drizzle-orm/pg-core';
-import {storyRawTable} from './storyRaw.ts';
+import {storyTable} from './storyRaw.ts';
 
 export enum StoryRawEventRole {
   Assistant = 'assistant',
@@ -16,7 +16,7 @@ export const storyRawEventTable = pgTable('story_raw_event', {
   id: uuid().defaultRandom().primaryKey(),
   storyRawId: uuid()
     .notNull()
-    .references(() => storyRawTable.id),
+    .references(() => storyTable.id),
   content: text().notNull(),
   role: text().$type<StoryRawEventRole>().notNull(),
   createdAt: timestamp().defaultNow().notNull(),

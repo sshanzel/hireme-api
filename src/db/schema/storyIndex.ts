@@ -3,7 +3,7 @@ import {storyTable} from './index.ts';
 
 export const storyIndexTable = pgTable('story_index', {
   id: uuid().defaultRandom().primaryKey(),
-  storyId: uuid().references(() => storyTable.storyRawId),
+  storyId: uuid().references(() => storyTable.id),
   chunk: text().notNull(),
   vector: vector({dimensions: 1536}).notNull(),
   metadata: jsonb().notNull(),

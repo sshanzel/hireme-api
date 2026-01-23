@@ -1,8 +1,8 @@
 import {eq} from 'drizzle-orm';
 import {db} from '../db/index.ts';
-import {storyTable} from '../db/schema/story.ts';
 import OpenAI from 'openai';
 import {storyIndexTable} from '../db/schema/storyIndex.ts';
+import {storyTable} from '../db/schema/storyRaw.ts';
 
 export const fetchEmbedding = async (content: string) => {
   const openai = new OpenAI();
@@ -16,13 +16,9 @@ export const fetchEmbedding = async (content: string) => {
 };
 
 export const generateStoryEmbedding = async (storyId: string) => {
-  const story = await db
-    .select()
-    .from(storyTable)
-    .where(eq(storyTable.storyRawId, storyId))
-    .limit(1);
+  const story = await db.select().from(storyTable).where(eq(storyTable.id, storyId)).limit(1);
 
-  if (!story[0]) {
+  if (!story[0]?.content) {
     throw new Error('Story not found');
   }
 
@@ -47,5 +43,33 @@ export const generateStoryEmbedding = async (storyId: string) => {
       vector: embedding,
       metadata: '{}',
     });
+  }
+};
+
+export const summarizeStory = async (storyId: string) => {
+  const story = await db.query.storyTable.findFirst({
+    where: eq(storyTable.id, storyId),
+    columns: {
+      id: true,
+      title: true,
+      tags: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    with: {
+      events: {
+        columns: {
+          id: true,
+          role: true,
+          content: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
+    },
+  });
+
+  if (!story) {
+    throw new Error('Story not found');
   }
 };

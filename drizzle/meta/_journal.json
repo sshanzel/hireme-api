@@ -169,6 +169,20 @@
       "when": 1769177774067,
       "tag": "0023_many_genesis",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1769179473948,
+      "tag": "0024_swift_hammerhead",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1769179666853,
+      "tag": "0025_lyrical_selene",
+      "breakpoints": true
     }
   ]
 }

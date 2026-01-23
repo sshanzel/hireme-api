@@ -1,1 +1,3 @@
-ALTER TABLE "story_index" ALTER COLUMN "metadata" SET DATA TYPE jsonb;
+ALTER TABLE "story_index" DROP COLUMN "metadata";
+
+ALTER TABLE "story_index" ADD COLUMN "metadata" jsonb;

@@ -1,5 +1,5 @@
 import {db} from '../db/index.ts';
-import {userTable, experienceTable, storyRawTable, storyRawEventTable} from '../db/schema/index.ts';
+import {userTable, experienceTable, storyTable, storyRawEventTable} from '../db/schema/index.ts';
 import {eq, exists, and, isNull, desc} from 'drizzle-orm';
 
 export async function getFullProfile(userId: string) {
@@ -43,26 +43,26 @@ export async function getFullProfile(userId: string) {
   // Get untagged stories (no experienceId) that have at least one event
   const untaggedStories = await db
     .select({
-      id: storyRawTable.id,
-      title: storyRawTable.title,
-      tags: storyRawTable.tags,
-      createdAt: storyRawTable.createdAt,
-      updatedAt: storyRawTable.updatedAt,
+      id: storyTable.id,
+      title: storyTable.title,
+      tags: storyTable.tags,
+      createdAt: storyTable.createdAt,
+      updatedAt: storyTable.updatedAt,
     })
-    .from(storyRawTable)
+    .from(storyTable)
     .where(
       and(
-        eq(storyRawTable.userId, userId),
-        isNull(storyRawTable.experienceId),
+        eq(storyTable.userId, userId),
+        isNull(storyTable.experienceId),
         exists(
           db
             .select()
             .from(storyRawEventTable)
-            .where(eq(storyRawEventTable.storyRawId, storyRawTable.id))
-        )
-      )
+            .where(eq(storyRawEventTable.storyRawId, storyTable.id)),
+        ),
+      ),
     )
-    .orderBy(storyRawTable.createdAt);
+    .orderBy(storyTable.createdAt);
 
   return {
     user,

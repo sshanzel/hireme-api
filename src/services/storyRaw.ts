@@ -1,10 +1,10 @@
 import {db} from '../db/index.ts';
-import {storyRawTable, storyRawEventTable, StoryRawEventRole} from '../db/schema/index.ts';
+import {storyTable, storyRawEventTable, StoryRawEventRole} from '../db/schema/index.ts';
 import {eq, and} from 'drizzle-orm';
 
 export async function createStoryRaw(userId: string, experienceId?: string) {
   const storyRaws = await db
-    .insert(storyRawTable)
+    .insert(storyTable)
     .values({
       userId,
       experienceId,
@@ -23,20 +23,20 @@ export async function deleteStoryRaw(id: string, userId: string) {
 
   // Delete events first (cascade)
   await db.delete(storyRawEventTable).where(eq(storyRawEventTable.storyRawId, id));
-  await db.delete(storyRawTable).where(eq(storyRawTable.id, id));
+  await db.delete(storyTable).where(eq(storyTable.id, id));
 
   return true;
 }
 
 export async function getStoryRawsByUser(userId: string) {
-  return db.select().from(storyRawTable).where(eq(storyRawTable.userId, userId));
+  return db.select().from(storyTable).where(eq(storyTable.userId, userId));
 }
 
 export async function getStoryRawById(id: string, userId: string) {
   const storyRaws = await db
     .select()
-    .from(storyRawTable)
-    .where(and(eq(storyRawTable.id, id), eq(storyRawTable.userId, userId)));
+    .from(storyTable)
+    .where(and(eq(storyTable.id, id), eq(storyTable.userId, userId)));
 
   return storyRaws[0] || null;
 }
@@ -94,9 +94,9 @@ export async function updateStoryRaw(id: string, userId: string, params: UpdateS
   }
 
   const updated = await db
-    .update(storyRawTable)
+    .update(storyTable)
     .set(updateData)
-    .where(eq(storyRawTable.id, id))
+    .where(eq(storyTable.id, id))
     .returning();
 
   return updated[0];
