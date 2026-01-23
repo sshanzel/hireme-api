@@ -38,12 +38,13 @@ fastify.register(routes);
 await fastify.register(websocket, {options: {maxPayload: 1048576}});
 
 // Heartbeat interval to detect dead connections
-const HEARTBEAT_INTERVAL = 30000; // 30 seconds
+const HEARTBEAT_INTERVAL = 30000;
+let heartbeatInterval: NodeJS.Timeout | null = null;
 
 fastify.ready().then(() => {
   const wss = fastify.websocketServer;
 
-  const heartbeat = setInterval(() => {
+  heartbeatInterval = setInterval(() => {
     wss.clients.forEach((client) => {
       const socket = client as HeartbeatSocket;
       if (socket.isAlive === false) {
@@ -55,9 +56,23 @@ fastify.ready().then(() => {
   }, HEARTBEAT_INTERVAL);
 
   wss.on('close', () => {
-    clearInterval(heartbeat);
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+    }
   });
 });
+
+const shutdown = async () => {
+  fastify.log.info('Shutting down...');
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+  }
+  await fastify.close();
+  process.exit(0);
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
 
 fastify.register(sockets, {prefix: '/ws'});
 
