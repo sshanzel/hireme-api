@@ -2,7 +2,7 @@ import {eq} from 'drizzle-orm';
 import {db} from '../db/index.ts';
 import OpenAI from 'openai';
 import {storyIndexTable} from '../db/schema/storyIndex.ts';
-import {storyTable} from '../db/schema/storyRaw.ts';
+import {storyTable} from '../db/schema/story.ts';
 
 export const fetchEmbedding = async (content: string) => {
   const openai = new OpenAI();

@@ -1,27 +1,27 @@
 import {pgTable, uuid, text, timestamp, pgEnum, jsonb} from 'drizzle-orm/pg-core';
-import {storyTable} from './storyRaw.ts';
+import {storyTable} from './story.ts';
 
-export enum StoryRawEventRole {
+export enum StoryEventRole {
   Assistant = 'assistant',
   User = 'user',
 }
 
-interface StoryRawEventMetadata {
+interface StoryEventMetadata {
   model: string;
   requestId: string;
   tokenUsage: number;
 }
 
-export const storyRawEventTable = pgTable('story_raw_event', {
+export const storyEventTable = pgTable('story_event', {
   id: uuid().defaultRandom().primaryKey(),
-  storyRawId: uuid()
+  storyId: uuid()
     .notNull()
     .references(() => storyTable.id),
   content: text().notNull(),
-  role: text().$type<StoryRawEventRole>().notNull(),
+  role: text().$type<StoryEventRole>().notNull(),
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
-  metadata: jsonb('metadata').$type<StoryRawEventMetadata>(),
+  metadata: jsonb('metadata').$type<StoryEventMetadata>(),
 });
 
-export type StoryRawEvent = typeof storyRawEventTable.$inferSelect;
+export type StoryEvent = typeof storyEventTable.$inferSelect;

@@ -4,7 +4,7 @@ import {StoryChatSession} from '../../services/storyChat.ts';
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
 
-export default async function storyRawChatRoutes(fastify: FastifyInstance): Promise<void> {
+export default async function storyChatRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get('/story-event', {websocket: true}, async (connection, req) => {
     const origin = req.headers.origin || '';
     const {uid, storyId} = req.query as Record<string, string>;

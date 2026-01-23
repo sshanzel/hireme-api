@@ -1,4 +1,4 @@
-import {StoryRawEventRole} from '../db/schema/storyRawEvent.ts';
+import {StoryEventRole} from '../db/schema/storyEvent.ts';
 import {OpenAI} from 'openai';
 import {z} from 'zod';
 import {zodResponseFormat} from 'openai/helpers/zod';
@@ -12,13 +12,13 @@ const StoryResponseSchema = z.object({
     .string()
     .nullable()
     .describe(
-      'A concise title for this story (only if this is a new conversation, otherwise null)'
+      'A concise title for this story (only if this is a new conversation, otherwise null)',
     ),
   tags: z
     .array(z.string())
     .nullable()
     .describe(
-      'Observed traits/signals from the conversation such as leadership, ownership, technical-depth, problem-solving, collaboration, impact, initiative, adaptability (only if this is a new conversation, otherwise null)'
+      'Observed traits/signals from the conversation such as leadership, ownership, technical-depth, problem-solving, collaboration, impact, initiative, adaptability (only if this is a new conversation, otherwise null)',
     ),
 });
 
@@ -80,7 +80,7 @@ const conversationFormat = `
 
 interface ChatMessage {
   content: string;
-  role: StoryRawEventRole;
+  role: StoryEventRole;
 }
 
 const getFormat = (isNew: boolean) => {
@@ -100,7 +100,7 @@ export async function generateResponse(history: ChatMessage[]): Promise<StoryRes
   const openai = new OpenAI();
 
   // New conversation = only 1 user message in history
-  const isNewConversation = history.filter(m => m.role === StoryRawEventRole.User).length === 1;
+  const isNewConversation = history.filter(m => m.role === StoryEventRole.User).length === 1;
   const formatting = getFormat(isNewConversation);
 
   // Build the instruction with context about whether this is a new conversation
@@ -108,7 +108,7 @@ export async function generateResponse(history: ChatMessage[]): Promise<StoryRes
 
   // Convert history to OpenAI message format
   const messages: OpenAI.ChatCompletionMessageParam[] = history.map(msg => ({
-    role: msg.role === StoryRawEventRole.User ? 'user' : 'assistant',
+    role: msg.role === StoryEventRole.User ? 'user' : 'assistant',
     content: msg.content,
   }));
 

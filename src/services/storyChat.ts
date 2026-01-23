@@ -1,13 +1,13 @@
 import type {WebSocket} from '@fastify/websocket';
 import {generateResponse, type StoryResponse} from './storyTeller.ts';
 import {
-  createStoryRawEvent,
-  deleteStoryRaw,
-  getOrCreateStoryRaw,
-  getStoryRawWithEvents,
-  updateStoryRaw,
-} from './storyRaw.ts';
-import {StoryRawEventRole} from '../db/schema/storyRawEvent.ts';
+  createStoryEvent,
+  deleteStory,
+  getOrCreateStory,
+  getStoryWithEvents,
+  updateStory,
+} from './story.ts';
+import {StoryEventRole} from '../db/schema/storyEvent.ts';
 
 // Message types
 export enum IncomingMessageType {
@@ -38,24 +38,24 @@ interface IncomingChatMessage {
 
 interface IncomingLoadStoryMessage {
   type: IncomingMessageType.LoadStory;
-  storyRawId: string;
+  storyId: string;
 }
 
 type IncomingMessage = IncomingChatMessage | IncomingLoadStoryMessage;
 
 interface StoryEvent {
   content: string;
-  role: StoryRawEventRole;
+  role: StoryEventRole;
   createdAt: Date;
 }
 
-interface StoryRawData {
+interface StoryData {
   id: string;
   title: string | null;
   tags: string[] | null;
 }
 
-interface StoryData {
+interface StoryDataWithEvents {
   id: string;
   title: string | null;
   tags: string[] | null;
@@ -64,7 +64,7 @@ interface StoryData {
 
 interface OutgoingConnectedMessage {
   type: OutgoingMessageType.Connected;
-  story: StoryData;
+  story: StoryDataWithEvents;
 }
 
 interface OutgoingResponseMessage {
@@ -80,7 +80,7 @@ interface OutgoingErrorMessage {
 
 interface OutgoingStoryLoadedMessage {
   type: OutgoingMessageType.StoryLoaded;
-  story: StoryData;
+  story: StoryDataWithEvents;
 }
 
 type OutgoingMessage =
@@ -92,39 +92,34 @@ type OutgoingMessage =
 export class StoryChatSession {
   private socket: WebSocket;
   private userId: string;
-  private storyRaw: StoryRawData;
+  private story: StoryData;
   private events: StoryEvent[];
 
-  private constructor(
-    socket: WebSocket,
-    userId: string,
-    storyRaw: StoryRawData,
-    events: StoryEvent[]
-  ) {
+  private constructor(socket: WebSocket, userId: string, story: StoryData, events: StoryEvent[]) {
     this.socket = socket;
     this.userId = userId;
-    this.storyRaw = storyRaw;
+    this.story = story;
     this.events = events;
   }
 
   static async create(
     socket: WebSocket,
     userId: string,
-    storyId?: string
+    storyId?: string,
   ): Promise<StoryChatSession | null> {
-    const entity = await getOrCreateStoryRaw(userId, storyId);
+    const entity = await getOrCreateStory(userId, storyId);
 
     if (!entity) {
       return null;
     }
 
-    const {storyRaw, events} = entity;
+    const {story, events} = entity;
 
     return new StoryChatSession(
       socket,
       userId,
-      {id: storyRaw.id, title: storyRaw.title, tags: storyRaw.tags},
-      events.map(({content, role, createdAt}) => ({content, role, createdAt}))
+      {id: story.id, title: story.title, tags: story.tags},
+      events.map(({content, role, createdAt}) => ({content, role, createdAt})),
     );
   }
 
@@ -140,11 +135,11 @@ export class StoryChatSession {
     this.send({type: OutgoingMessageType.Error, error, code});
   }
 
-  private getStoryData(): StoryData {
+  private getStoryData(): StoryDataWithEvents {
     return {
-      id: this.storyRaw.id,
-      title: this.storyRaw.title,
-      tags: this.storyRaw.tags,
+      id: this.story.id,
+      title: this.story.title,
+      tags: this.story.tags,
       events: this.events,
     };
   }
@@ -185,24 +180,24 @@ export class StoryChatSession {
     }
 
     if (parsed.type === IncomingMessageType.LoadStory) {
-      if (typeof parsed.storyRawId !== 'string') {
+      if (typeof parsed.storyId !== 'string') {
         return {
-          error: 'Invalid message format. Expected: {type: "load_story", storyRawId: string}',
+          error: 'Invalid message format. Expected: {type: "load_story", storyId: string}',
         };
       }
-      return {message: {type: IncomingMessageType.LoadStory, storyRawId: parsed.storyRawId}};
+      return {message: {type: IncomingMessageType.LoadStory, storyId: parsed.storyId}};
     }
 
     return {error: `Unknown message type: ${parsed.type}`};
   }
 
   // Chat operations
-  private async saveEvent(content: string, role: StoryRawEventRole): Promise<void> {
-    const {event} = await createStoryRawEvent({
+  private async saveEvent(content: string, role: StoryEventRole): Promise<void> {
+    const {event} = await createStoryEvent({
       userId: this.userId,
       content,
       role,
-      storyRawId: this.storyRaw.id,
+      storyId: this.story.id,
     });
     this.events.push({content, role, createdAt: event.createdAt});
   }
@@ -212,23 +207,22 @@ export class StoryChatSession {
 
     // Save assistant response (non-blocking on failure)
     try {
-      await this.saveEvent(response.content, StoryRawEventRole.Assistant);
+      await this.saveEvent(response.content, StoryEventRole.Assistant);
     } catch (err) {
       console.error('Failed to save assistant response:', err);
     }
 
     // Update title/tags for new conversations (first user message)
-    const isNewConversation =
-      this.events.filter(e => e.role === StoryRawEventRole.User).length === 1;
+    const isNewConversation = this.events.filter(e => e.role === StoryEventRole.User).length === 1;
     if (isNewConversation && (response.title || response.tags)) {
       try {
-        await updateStoryRaw(this.storyRaw.id, this.userId, {
+        await updateStory(this.story.id, this.userId, {
           title: response.title ?? undefined,
           tags: response.tags ?? undefined,
         });
         // Update local state
-        if (response.title) this.storyRaw.title = response.title;
-        if (response.tags) this.storyRaw.tags = response.tags;
+        if (response.title) this.story.title = response.title;
+        if (response.tags) this.story.tags = response.tags;
       } catch (err) {
         console.error('Failed to update story metadata:', err);
       }
@@ -238,18 +232,18 @@ export class StoryChatSession {
   }
 
   // Load story handler
-  private async handleLoadStory(storyRawId: string): Promise<void> {
-    const result = await getStoryRawWithEvents(storyRawId, this.userId);
+  private async handleLoadStory(storyId: string): Promise<void> {
+    const result = await getStoryWithEvents(storyId, this.userId);
 
     if (!result) {
       this.sendError('Story not found', ErrorCode.NotFound);
       return;
     }
 
-    const {storyRaw, events} = result;
+    const {story, events} = result;
 
     // Update session state
-    this.storyRaw = {id: storyRaw.id, title: storyRaw.title, tags: storyRaw.tags};
+    this.story = {id: story.id, title: story.title, tags: story.tags};
     this.events = events.map(({content, role, createdAt}) => ({content, role, createdAt}));
 
     // Send story data to client
@@ -262,7 +256,7 @@ export class StoryChatSession {
   // Chat handler
   private async handleChat(content: string): Promise<void> {
     try {
-      await this.saveEvent(content, StoryRawEventRole.User);
+      await this.saveEvent(content, StoryEventRole.User);
     } catch (err) {
       console.error('Failed to save user message:', err);
       this.sendError('Failed to save message', ErrorCode.StorageError);
@@ -295,7 +289,7 @@ export class StoryChatSession {
         await this.handleChat(message.data);
         break;
       case IncomingMessageType.LoadStory:
-        await this.handleLoadStory(message.storyRawId);
+        await this.handleLoadStory(message.storyId);
         break;
     }
   }
@@ -306,9 +300,9 @@ export class StoryChatSession {
       return;
     }
 
-    const result = await getStoryRawWithEvents(this.storyRaw.id, this.userId);
+    const result = await getStoryWithEvents(this.story.id, this.userId);
     if (result && result.events.length === 0) {
-      await deleteStoryRaw(this.storyRaw.id, this.userId);
+      await deleteStory(this.story.id, this.userId);
     }
   }
 }
