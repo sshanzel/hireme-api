@@ -2,7 +2,7 @@ import {eq} from 'drizzle-orm';
 import {db} from '../db/index.ts';
 import OpenAI from 'openai';
 import {storyIndexTable} from '../db/schema/storyIndex.ts';
-import {storyTable} from '../db/schema/story.ts';
+import {Story, storyTable} from '../db/schema/story.ts';
 
 export const fetchEmbedding = async (content: string) => {
   const openai = new OpenAI();
@@ -15,31 +15,28 @@ export const fetchEmbedding = async (content: string) => {
   return response.data[0].embedding;
 };
 
-export const generateStoryEmbedding = async (storyId: string) => {
-  const story = await db.select().from(storyTable).where(eq(storyTable.id, storyId)).limit(1);
-
-  if (!story[0]?.content) {
+export const generateStoryEmbedding = async (id: string, content: string) => {
+  if (!content) {
     throw new Error('Story not found');
   }
 
-  const content = story[0].content;
   const embedding = await fetchEmbedding(content);
 
   // for now, store 1:1 mapping of content to embedding
   const exists = await db
     .select()
     .from(storyIndexTable)
-    .where(eq(storyIndexTable.storyId, storyId))
+    .where(eq(storyIndexTable.storyId, id))
     .limit(1);
 
   if (exists.length > 0) {
     await db
       .update(storyIndexTable)
       .set({chunk: content, vector: embedding})
-      .where(eq(storyIndexTable.storyId, storyId));
+      .where(eq(storyIndexTable.storyId, id));
   } else {
     await db.insert(storyIndexTable).values({
-      storyId,
+      storyId: id,
       chunk: content,
       vector: embedding,
       metadata: {},
@@ -47,31 +44,9 @@ export const generateStoryEmbedding = async (storyId: string) => {
   }
 };
 
-export const summarizeStory = async (storyId: string) => {
-  const story = await db.query.storyTable.findFirst({
-    where: eq(storyTable.id, storyId),
-    columns: {
-      id: true,
-      title: true,
-      tags: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-    with: {
-      events: {
-        columns: {
-          id: true,
-          role: true,
-          content: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      },
-    },
-  });
-
-  if (!story) {
-    throw new Error('Story not found');
+export const summarizeStory = async (story: Story) => {
+  if (!story || !story.events || story.events.length < 2) {
+    return;
   }
 
   // send the events to OpenAI for summarization
@@ -101,12 +76,6 @@ export const summarizeStory = async (storyId: string) => {
   });
 
   const summary = response.choices[0].message.content?.trim();
-
-  // update the story content with the summary
-  await db
-    .update(storyTable)
-    .set({content: summary, updatedAt: new Date()})
-    .where(eq(storyTable.id, storyId));
 
   return summary;
 };
