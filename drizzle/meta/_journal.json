@@ -155,6 +155,13 @@
       "when": 1769081052742,
       "tag": "0021_common_ozymandias",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1769171357022,
+      "tag": "0022_bouncy_luminals",
+      "breakpoints": true
     }
   ]
 }
