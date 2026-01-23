@@ -1,0 +1,1 @@
+ALTER TABLE "story_index" ALTER COLUMN "metadata" SET DATA TYPE jsonb;

@@ -162,6 +162,13 @@
       "when": 1769171357022,
       "tag": "0022_bouncy_luminals",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1769177774067,
+      "tag": "0023_many_genesis",
+      "breakpoints": true
     }
   ]
 }
