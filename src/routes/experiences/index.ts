@@ -6,10 +6,10 @@ import {
   getExperiencesByUser,
   updateExperience,
   deleteExperience,
-} from '../../services/experience.ts';
+} from '../../services/experience/experience.ts';
 import {ExperienceType} from '../../db/schema/experience.ts';
 
-const experienceTypeSchema = z.nativeEnum(ExperienceType);
+const experienceTypeSchema = z.enum(ExperienceType);
 
 const createExperienceSchema = z.object({
   type: experienceTypeSchema,
@@ -41,7 +41,7 @@ export default async function experiencesRoutes(fastify: FastifyInstance): Promi
     withAuth(async (request: AuthenticatedRequest, reply: FastifyReply) => {
       const experiences = await getExperiencesByUser(request.user.id);
       return reply.status(200).send({experiences});
-    })
+    }),
   );
 
   fastify.post(
@@ -65,7 +65,7 @@ export default async function experiencesRoutes(fastify: FastifyInstance): Promi
       });
 
       return reply.status(201).send({experience});
-    })
+    }),
   );
 
   fastify.patch<{Params: IdParams}>(
@@ -94,7 +94,7 @@ export default async function experiencesRoutes(fastify: FastifyInstance): Promi
       }
 
       return reply.status(200).send({experience: updated});
-    })
+    }),
   );
 
   fastify.delete<{Params: IdParams}>(
@@ -108,6 +108,6 @@ export default async function experiencesRoutes(fastify: FastifyInstance): Promi
       }
 
       return reply.status(200).send({message: 'Experience deleted successfully'});
-    })
+    }),
   );
 }

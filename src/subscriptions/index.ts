@@ -3,10 +3,12 @@ import {subscribe} from '../services/pubsub.ts';
 import type {SubscriptionConfig} from './types.ts';
 import {cvUploadParsingSubscription} from './cvUploadParsing.ts';
 import {storyCanonicalizationSubscription} from './storyCanonicalization.ts';
+import {experienceIndexingSubscription} from './experienceIndexing.ts';
 
 const subscriptions: SubscriptionConfig[] = [
   cvUploadParsingSubscription,
   storyCanonicalizationSubscription,
+  experienceIndexingSubscription,
 ];
 
 export async function registerSubscriptions(): Promise<void> {

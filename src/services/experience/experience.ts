@@ -1,5 +1,5 @@
-import {db} from '../db/index.ts';
-import {experienceTable, ExperienceType} from '../db/schema/index.ts';
+import {db} from '../../db/index.ts';
+import {experienceTable, ExperienceType} from '../../db/schema/index.ts';
 import {eq, and} from 'drizzle-orm';
 
 interface CreateExperienceParams {
