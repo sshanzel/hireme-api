@@ -12,13 +12,11 @@ import {publish} from './pubsub.ts';
 
 export enum IncomingMessageType {
   Chat = 'chat',
-  LoadStory = 'load_story',
 }
 
 export enum OutgoingMessageType {
   Connected = 'connected',
   Response = 'response',
-  StoryLoaded = 'story_loaded',
   Error = 'error',
 }
 
@@ -35,12 +33,7 @@ interface IncomingChatMessage {
   data: string;
 }
 
-interface IncomingLoadStoryMessage {
-  type: IncomingMessageType.LoadStory;
-  storyId: string;
-}
-
-type IncomingMessage = IncomingChatMessage | IncomingLoadStoryMessage;
+type IncomingMessage = IncomingChatMessage;
 
 interface StoryEvent {
   content: string;
@@ -77,16 +70,7 @@ interface OutgoingErrorMessage {
   code: ErrorCode;
 }
 
-interface OutgoingStoryLoadedMessage {
-  type: OutgoingMessageType.StoryLoaded;
-  story: StoryDataWithEvents;
-}
-
-type OutgoingMessage =
-  | OutgoingConnectedMessage
-  | OutgoingResponseMessage
-  | OutgoingStoryLoadedMessage
-  | OutgoingErrorMessage;
+type OutgoingMessage = OutgoingConnectedMessage | OutgoingResponseMessage | OutgoingErrorMessage;
 
 export class StoryChatSession {
   private socket: WebSocket;
@@ -178,15 +162,6 @@ export class StoryChatSession {
       return {message: {type: IncomingMessageType.Chat, data: content}};
     }
 
-    if (parsed.type === IncomingMessageType.LoadStory) {
-      if (typeof parsed.storyId !== 'string') {
-        return {
-          error: 'Invalid message format. Expected: {type: "load_story", storyId: string}',
-        };
-      }
-      return {message: {type: IncomingMessageType.LoadStory, storyId: parsed.storyId}};
-    }
-
     return {error: `Unknown message type: ${parsed.type}`};
   }
 
@@ -227,25 +202,6 @@ export class StoryChatSession {
     return response;
   }
 
-  private async handleLoadStory(storyId: string): Promise<void> {
-    const result = await getStoryWithEvents(storyId, this.userId);
-
-    if (!result) {
-      this.sendError('Story not found', ErrorCode.NotFound);
-      return;
-    }
-
-    const {story, events} = result;
-
-    this.story = {id: story.id, title: story.title, tags: story.tags};
-    this.events = events.map(({content, role, createdAt}) => ({content, role, createdAt}));
-
-    this.send({
-      type: OutgoingMessageType.StoryLoaded,
-      story: this.getStoryData(),
-    });
-  }
-
   private async handleChat(content: string): Promise<void> {
     try {
       await this.saveEvent(content, StoryEventRole.User);
@@ -278,9 +234,6 @@ export class StoryChatSession {
     switch (message.type) {
       case IncomingMessageType.Chat:
         await this.handleChat(message.data);
-        break;
-      case IncomingMessageType.LoadStory:
-        await this.handleLoadStory(message.storyId);
         break;
     }
   }
