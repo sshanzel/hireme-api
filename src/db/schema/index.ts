@@ -7,3 +7,4 @@ export * from './storyEvent.ts';
 export * from './userParsedArchive.ts';
 export * from './coaching.ts';
 export * from './coachingEvent.ts';
+export * from './types.ts';

@@ -1,5 +1,5 @@
 import {db} from '../db/index.ts';
-import {storyTable, storyEventTable, StoryEventRole} from '../db/schema/index.ts';
+import {storyTable, storyEventTable, MessageRole} from '../db/schema/index.ts';
 import {eq, and} from 'drizzle-orm';
 
 export async function createStory(userId: string, experienceId?: string) {
@@ -102,7 +102,7 @@ export async function updateStory(id: string, userId: string, params: UpdateStor
 interface CreateStoryEventParams {
   userId: string;
   content: string;
-  role: StoryEventRole;
+  role: MessageRole;
   storyId: string;
 }
 

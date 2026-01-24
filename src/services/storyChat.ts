@@ -8,7 +8,7 @@ import {
   getStoryWithEvents,
   updateStory,
 } from './story.ts';
-import {StoryEventRole} from '../db/schema/storyEvent.ts';
+import type {MessageRole} from '../db/schema/types.ts';
 import {publish} from './pubsub.ts';
 
 export enum IncomingMessageType {
@@ -38,7 +38,7 @@ type IncomingMessage = IncomingChatMessage;
 
 interface StoryEvent {
   content: string;
-  role: StoryEventRole;
+  role: MessageRole;
   createdAt: Date;
 }
 
@@ -166,7 +166,7 @@ export class StoryChatSession {
     return {error: `Unknown message type: ${parsed.type}`};
   }
 
-  private async saveEvent(content: string, role: StoryEventRole): Promise<void> {
+  private async saveEvent(content: string, role: MessageRole): Promise<void> {
     const {event} = await createStoryEvent({
       userId: this.userId,
       content,
@@ -180,12 +180,12 @@ export class StoryChatSession {
     const response = await generateResponse(this.events);
 
     try {
-      await this.saveEvent(response.content, StoryEventRole.Assistant);
+      await this.saveEvent(response.content, 'assistant');
     } catch (err) {
       console.error('Failed to save assistant response:', err);
     }
 
-    const isNewConversation = this.events.filter(e => e.role === StoryEventRole.User).length === 1;
+    const isNewConversation = this.events.filter(e => e.role === 'user').length === 1;
     if (isNewConversation && (response.title || response.tags)) {
       try {
         await updateStory(this.story.id, this.userId, {
@@ -205,7 +205,7 @@ export class StoryChatSession {
 
   private async handleChat(content: string): Promise<void> {
     try {
-      await this.saveEvent(content, StoryEventRole.User);
+      await this.saveEvent(content, 'user');
     } catch (err) {
       console.error('Failed to save user message:', err);
       this.sendError('Failed to save message', ErrorCode.StorageError);

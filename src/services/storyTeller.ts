@@ -1,4 +1,4 @@
-import {StoryEventRole} from '../db/schema/storyEvent.ts';
+import type {MessageRole} from '../db/schema/types.ts';
 import {OpenAI} from 'openai';
 import {z} from 'zod';
 import {zodResponseFormat} from 'openai/helpers/zod';
@@ -80,7 +80,7 @@ const conversationFormat = `
 
 interface ChatMessage {
   content: string;
-  role: StoryEventRole;
+  role: MessageRole;
 }
 
 const getFormat = (isNew: boolean) => {
@@ -100,7 +100,7 @@ export async function generateResponse(history: ChatMessage[]): Promise<StoryRes
   const openai = new OpenAI();
 
   // New conversation = only 1 user message in history
-  const isNewConversation = history.filter(m => m.role === StoryEventRole.User).length === 1;
+  const isNewConversation = history.filter(m => m.role === 'user').length === 1;
   const formatting = getFormat(isNewConversation);
 
   // Build the instruction with context about whether this is a new conversation
@@ -108,7 +108,7 @@ export async function generateResponse(history: ChatMessage[]): Promise<StoryRes
 
   // Convert history to OpenAI message format
   const messages: OpenAI.ChatCompletionMessageParam[] = history.map(msg => ({
-    role: msg.role === StoryEventRole.User ? 'user' : 'assistant',
+    role: msg.role === 'user' ? 'user' : 'assistant',
     content: msg.content,
   }));
 
