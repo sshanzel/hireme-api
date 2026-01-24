@@ -4,6 +4,7 @@ import {
   createStoryEvent,
   deleteStory,
   getOrCreateStory,
+  getStoryById,
   getStoryWithEvents,
   updateStory,
 } from './story.ts';
@@ -239,14 +240,9 @@ export class StoryChatSession {
   }
 
   async cleanup(): Promise<void> {
-    if (this.events.length > 0) {
-      return;
-    }
-
-    const result = await getStoryWithEvents(this.story.id, this.userId);
-
-    if (result && result.events.length === 0) {
+    if (this.events.length === 0) {
       await deleteStory(this.story.id, this.userId);
+      return;
     }
 
     if (this.events.length === this.initialSize) {
