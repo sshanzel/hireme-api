@@ -1,10 +1,6 @@
 import type {WebSocket} from '@fastify/websocket';
 import {generateProfileResponse, type ProfileResponse} from './generation.ts';
-import {
-  createProfileChatEvent,
-  getOrCreateProfileChat,
-  getUserById,
-} from './bio.ts';
+import {createProfileChatEvent, getOrCreateProfileChat, getUserById} from './bio.ts';
 
 export enum IncomingMessageType {
   Chat = 'chat',
@@ -49,7 +45,7 @@ interface ProfileChatDataWithEvents extends ProfileChatData {
 
 interface OutgoingConnectedMessage {
   type: OutgoingMessageType.Connected;
-  profileChat: ProfileChatDataWithEvents;
+  data: ProfileChatDataWithEvents;
 }
 
 interface OutgoingResponseMessage {
@@ -145,7 +141,7 @@ export class BioChatSession {
   sendConnected(): void {
     this.send({
       type: OutgoingMessageType.Connected,
-      profileChat: this.getProfileChatData(),
+      data: this.getProfileChatData(),
     });
   }
 
@@ -181,9 +177,7 @@ export class BioChatSession {
 
   private isRateLimited(): boolean {
     const now = Date.now();
-    this.messageTimestamps = this.messageTimestamps.filter(
-      ts => now - ts < RATE_LIMIT_WINDOW_MS,
-    );
+    this.messageTimestamps = this.messageTimestamps.filter(ts => now - ts < RATE_LIMIT_WINDOW_MS);
 
     if (this.messageTimestamps.length >= MAX_MESSAGES_PER_WINDOW) {
       return true;
