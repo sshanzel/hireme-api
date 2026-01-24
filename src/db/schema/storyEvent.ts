@@ -1,5 +1,6 @@
-import {pgTable, uuid, text, timestamp, pgEnum, jsonb} from 'drizzle-orm/pg-core';
+import {pgTable, uuid, text, timestamp, jsonb} from 'drizzle-orm/pg-core';
 import {storyTable} from './story.ts';
+import {relations} from 'drizzle-orm';
 
 export enum StoryEventRole {
   Assistant = 'assistant',
@@ -23,5 +24,12 @@ export const storyEventTable = pgTable('story_event', {
   updatedAt: timestamp().defaultNow().notNull(),
   metadata: jsonb('metadata').$type<StoryEventMetadata>(),
 });
+
+export const storyEventRelations = relations(storyEventTable, ({one}) => ({
+  story: one(storyTable, {
+    fields: [storyEventTable.storyId],
+    references: [storyTable.id],
+  }),
+}));
 
 export type StoryEvent = typeof storyEventTable.$inferSelect;

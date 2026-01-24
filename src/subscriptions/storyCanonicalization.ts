@@ -6,6 +6,7 @@ import {storyTable} from '../db/schema/story.ts';
 
 interface StoryCanonicalizationEvent {
   storyId: string;
+  version: number;
 }
 
 export const storyCanonicalizationSubscription: SubscriptionConfig<StoryCanonicalizationEvent> = {
@@ -24,7 +25,15 @@ export const storyCanonicalizationSubscription: SubscriptionConfig<StoryCanonica
       return;
     }
 
-    const summary = await summarizeStory(story);
+    if (story.canonicalizedVersion > data.version) {
+      console.log(`Story already canonicalized: ${data.storyId}`);
+
+      return;
+    }
+
+    const summary = await (story.canonicalizedVersion > data.version
+      ? Promise.resolve(story.content)
+      : summarizeStory(story));
 
     if (!summary) {
       console.log(`No summary generated for story: ${data.storyId}`);
@@ -33,7 +42,7 @@ export const storyCanonicalizationSubscription: SubscriptionConfig<StoryCanonica
 
     await db
       .update(storyTable)
-      .set({title: summary, canonicalizedVersion: story.canonicalizedVersion + 1})
+      .set({content: summary, canonicalizedVersion: story.canonicalizedVersion + 1})
       .where(eq(storyTable.id, data.storyId));
 
     console.log(`Story canonicalized: ${data.storyId}`);
