@@ -5,3 +5,5 @@ export * from './storyIndex.ts';
 export * from './story.ts';
 export * from './storyEvent.ts';
 export * from './userParsedArchive.ts';
+export * from './coaching.ts';
+export * from './coachingEvent.ts';
