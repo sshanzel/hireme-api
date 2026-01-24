@@ -30,6 +30,7 @@
   },
   "homepage": "https://github.com/sshanzel/flex-api#readme",
   "dependencies": {
+    "@fastify/cookie": "^11.0.2",
     "@fastify/jwt": "^9.1.0",
     "@fastify/multipart": "^9.4.0",
     "@fastify/websocket": "^11.2.0",
