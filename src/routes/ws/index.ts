@@ -10,10 +10,6 @@ export default async function storyChatRoutes(fastify: FastifyInstance): Promise
     const {uid, storyId} = req.query as Record<string, string>;
 
     const socket = connection as HeartbeatSocket;
-    socket.isAlive = true;
-    socket.on('pong', () => {
-      socket.isAlive = true;
-    });
 
     if (!uid) {
       return socket.close(4001, 'Missing user id');
@@ -23,19 +19,25 @@ export default async function storyChatRoutes(fastify: FastifyInstance): Promise
       return socket.close(4003, 'Origin not allowed');
     }
 
-    let session: StoryChatSession;
+    let session: StoryChatSession | null;
+
     try {
-      const result = await StoryChatSession.create(socket, uid, storyId);
-      if (!result) {
+      session = await StoryChatSession.create(socket, uid, storyId);
+
+      if (!session) {
         return socket.close(4004, 'Story not found');
       }
-      session = result;
     } catch (err) {
       console.error('Failed to initialize session:', err);
       return socket.close(4002, 'Failed to initialize story');
     }
 
     session.sendConnected();
+
+    socket.isAlive = true;
+    socket.on('pong', () => {
+      socket.isAlive = true;
+    });
 
     socket.on('message', async (rawMessage: Buffer) => {
       socket.isAlive = true;
