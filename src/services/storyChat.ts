@@ -9,7 +9,6 @@ import {
 } from './story.ts';
 import {StoryEventRole} from '../db/schema/storyEvent.ts';
 
-// Message types
 export enum IncomingMessageType {
   Chat = 'chat',
   LoadStory = 'load_story',
@@ -30,7 +29,6 @@ export enum ErrorCode {
   NotFound = 'NOT_FOUND',
 }
 
-// Message interfaces
 interface IncomingChatMessage {
   type: IncomingMessageType.Chat;
   data: string;
@@ -123,7 +121,6 @@ export class StoryChatSession {
     );
   }
 
-  // Socket communication
   private send(message: OutgoingMessage): void {
     if (this.socket.readyState !== this.socket.OPEN) {
       return;
@@ -155,7 +152,6 @@ export class StoryChatSession {
     this.send({type: OutgoingMessageType.Response, data});
   }
 
-  // Message parsing
   private parseMessage(raw: string): {message?: IncomingMessage; error?: string} {
     let parsed;
     try {
@@ -191,7 +187,6 @@ export class StoryChatSession {
     return {error: `Unknown message type: ${parsed.type}`};
   }
 
-  // Chat operations
   private async saveEvent(content: string, role: StoryEventRole): Promise<void> {
     const {event} = await createStoryEvent({
       userId: this.userId,
@@ -205,14 +200,12 @@ export class StoryChatSession {
   private async generateAndSaveResponse(): Promise<StoryResponse> {
     const response = await generateResponse(this.events);
 
-    // Save assistant response (non-blocking on failure)
     try {
       await this.saveEvent(response.content, StoryEventRole.Assistant);
     } catch (err) {
       console.error('Failed to save assistant response:', err);
     }
 
-    // Update title/tags for new conversations (first user message)
     const isNewConversation = this.events.filter(e => e.role === StoryEventRole.User).length === 1;
     if (isNewConversation && (response.title || response.tags)) {
       try {
@@ -220,7 +213,7 @@ export class StoryChatSession {
           title: response.title ?? undefined,
           tags: response.tags ?? undefined,
         });
-        // Update local state
+
         if (response.title) this.story.title = response.title;
         if (response.tags) this.story.tags = response.tags;
       } catch (err) {
@@ -231,7 +224,6 @@ export class StoryChatSession {
     return response;
   }
 
-  // Load story handler
   private async handleLoadStory(storyId: string): Promise<void> {
     const result = await getStoryWithEvents(storyId, this.userId);
 
@@ -242,18 +234,15 @@ export class StoryChatSession {
 
     const {story, events} = result;
 
-    // Update session state
     this.story = {id: story.id, title: story.title, tags: story.tags};
     this.events = events.map(({content, role, createdAt}) => ({content, role, createdAt}));
 
-    // Send story data to client
     this.send({
       type: OutgoingMessageType.StoryLoaded,
       story: this.getStoryData(),
     });
   }
 
-  // Chat handler
   private async handleChat(content: string): Promise<void> {
     try {
       await this.saveEvent(content, StoryEventRole.User);
@@ -275,7 +264,6 @@ export class StoryChatSession {
     this.sendResponse(response);
   }
 
-  // Main message handler
   async handleMessage(rawMessage: string): Promise<void> {
     const {message, error: parseError} = this.parseMessage(rawMessage);
 
@@ -294,7 +282,6 @@ export class StoryChatSession {
     }
   }
 
-  // Cleanup
   async cleanup(): Promise<void> {
     if (this.events.length > 0) {
       return;
