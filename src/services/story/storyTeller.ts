@@ -1,4 +1,4 @@
-import type {MessageRole} from '../db/schema/types.ts';
+import type {MessageRole} from '../../db/schema/types.ts';
 import {OpenAI} from 'openai';
 import {z} from 'zod';
 import {zodResponseFormat} from 'openai/helpers/zod';

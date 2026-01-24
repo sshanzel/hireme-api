@@ -1,6 +1,6 @@
 import {FastifyInstance, FastifyReply} from 'fastify';
 import {withAuth, AuthenticatedRequest} from '../../utils/auth-helper.ts';
-import {getCoachingSessionsByUser, deleteCoaching} from '../../services/coaching.ts';
+import {getCoachingSessionsByUser, deleteCoaching} from '../../services/coaching/coaching.ts';
 
 interface IdParams {
   id: string;

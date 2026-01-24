@@ -1,6 +1,6 @@
 import {FastifyInstance, FastifyReply} from 'fastify';
 import {withAuth, AuthenticatedRequest} from '../../utils/auth-helper.ts';
-import {getStoriesByUser, deleteStory, updateStory} from '../../services/story.ts';
+import {getStoriesByUser, deleteStory, updateStory} from '../../services/story/story.ts';
 
 interface IdParams {
   id: string;

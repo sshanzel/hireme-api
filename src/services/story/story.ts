@@ -1,5 +1,5 @@
-import {db} from '../db/index.ts';
-import {storyTable, storyEventTable, MessageRole} from '../db/schema/index.ts';
+import {db} from '../../db/index.ts';
+import {storyTable, storyEventTable, MessageRole} from '../../db/schema/index.ts';
 import {eq, and} from 'drizzle-orm';
 
 export async function createStory(userId: string, experienceId?: string) {

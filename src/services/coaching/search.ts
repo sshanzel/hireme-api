@@ -1,6 +1,6 @@
-import {db} from '../db/index.ts';
+import {db} from '../../db/index.ts';
 import {sql} from 'drizzle-orm';
-import {fetchEmbedding} from './storyProcessing.ts';
+import {fetchEmbedding} from '../story/storyProcessing.ts';
 
 export interface SearchResult {
   id: string;

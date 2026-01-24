@@ -8,8 +8,8 @@ import {
   getStoryWithEvents,
   updateStory,
 } from './story.ts';
-import type {MessageRole} from '../db/schema/types.ts';
-import {publish} from './pubsub.ts';
+import type {MessageRole} from '../../db/schema/types.ts';
+import {publish} from '../pubsub.ts';
 
 export enum IncomingMessageType {
   Chat = 'chat',

@@ -1,7 +1,7 @@
 import {FastifyInstance} from 'fastify';
 import type {HeartbeatSocket} from '../../types/websocket.ts';
-import {StoryChatSession} from '../../services/storyChat.ts';
-import {CoachChatSession} from '../../services/coachChat.ts';
+import {StoryChatSession} from '../../services/story/storyChat.ts';
+import {CoachChatSession} from '../../services/coaching/coachChat.ts';
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
 

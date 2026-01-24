@@ -1,5 +1,5 @@
 import type {SubscriptionConfig} from './types.ts';
-import {summarizeStory, generateStoryEmbedding} from '../services/storyProcessing.ts';
+import {summarizeStory, generateStoryEmbedding} from '../services/story/storyProcessing.ts';
 import {eq} from 'drizzle-orm';
 import {db} from '../db/index.ts';
 import {storyTable} from '../db/schema/story.ts';
