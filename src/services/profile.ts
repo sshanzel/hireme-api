@@ -1,6 +1,6 @@
 import {db} from '../db/index.ts';
 import {userTable, experienceTable, storyTable, storyEventTable} from '../db/schema/index.ts';
-import {eq, exists, and, isNull, desc} from 'drizzle-orm';
+import {eq, exists, and, isNull, desc, or} from 'drizzle-orm';
 
 export async function getFullProfile(userId: string) {
   // Get user
@@ -9,6 +9,7 @@ export async function getFullProfile(userId: string) {
     columns: {
       id: true,
       email: true,
+      username: true,
       name: true,
       links: true,
       summary: true,
@@ -64,4 +65,33 @@ export async function getFullProfile(userId: string) {
     experiences,
     untaggedStories,
   };
+}
+
+export async function getPublicProfile(identifier: string) {
+  return db.query.userTable.findFirst({
+    where: or(eq(userTable.id, identifier), eq(userTable.username, identifier)),
+    columns: {
+      id: true,
+      username: true,
+      name: true,
+      links: true,
+      summary: true,
+      headline: true,
+    },
+    with: {
+      experiences: {
+        columns: {
+          id: true,
+          type: true,
+          title: true,
+          organization: true,
+          startDate: true,
+          endDate: true,
+          description: true,
+          skills: true,
+        },
+        orderBy: desc(experienceTable.startDate),
+      },
+    },
+  });
 }

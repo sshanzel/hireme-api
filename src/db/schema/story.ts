@@ -24,6 +24,10 @@ export type Story = typeof storyTable.$inferSelect & {
 };
 
 export const storyRelations = relations(storyTable, ({one, many}) => ({
+  user: one(userTable, {
+    fields: [storyTable.userId],
+    references: [userTable.id],
+  }),
   experience: one(experienceTable, {
     fields: [storyTable.experienceId],
     references: [experienceTable.id],
