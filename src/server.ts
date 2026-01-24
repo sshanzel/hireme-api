@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
+import fastifyCookie from '@fastify/cookie';
 import fastifyJwt from '@fastify/jwt';
 import fastifyMultipart from '@fastify/multipart';
 import websocket from '@fastify/websocket';
@@ -12,8 +13,17 @@ const fastify: FastifyInstance = Fastify({
   logger: true,
 });
 
-// Register JWT plugin
-fastify.register(fastifyJwt, {secret: process.env.JWT_SECRET!});
+// Register cookie plugin
+fastify.register(fastifyCookie);
+
+// Register JWT plugin with cookie support
+fastify.register(fastifyJwt, {
+  secret: process.env.JWT_SECRET!,
+  cookie: {
+    cookieName: 'token',
+    signed: false,
+  },
+});
 
 // Register multipart for file uploads
 fastify.register(fastifyMultipart, {

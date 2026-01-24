@@ -1,4 +1,4 @@
-import fastify, {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
+import {FastifyInstance, FastifyRequest, FastifyReply} from 'fastify';
 import {authenticateUser, createUser, getUserByEmail} from '../../services/auth.ts';
 import {withAuth} from '../../utils/auth-helper.ts';
 import {User} from '../../db/schema/user.ts';
@@ -14,12 +14,24 @@ interface SignupBody {
   name: string;
 }
 
+const TOKEN_MAX_AGE = 60 * 60 * 24 * 7; // 7 days in seconds
+
 const getSignPayload = (user: User) => ({
   id: user.id,
   email: user.email,
   name: user.name,
   cvUploadedAt: user.cvUploadedAt,
 });
+
+const setAuthCookie = (reply: FastifyReply, token: string) => {
+  reply.setCookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+    maxAge: TOKEN_MAX_AGE,
+  });
+};
 
 export default async function authRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post<{Body: LoginBody}>(
@@ -37,10 +49,10 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
         return reply.status(401).send({error: 'Invalid email or password'});
       }
 
-      const token = fastify.jwt.sign(getSignPayload(user));
+      const token = fastify.jwt.sign(getSignPayload(user), {expiresIn: TOKEN_MAX_AGE});
+      setAuthCookie(reply, token);
 
       return reply.status(200).send({
-        token,
         user: {
           id: user.id,
           email: user.email,
@@ -48,7 +60,7 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
           cvUploadedAt: user.cvUploadedAt,
         },
       });
-    }
+    },
   );
 
   fastify.post<{Body: SignupBody}>(
@@ -72,10 +84,10 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
 
       const newUser = await createUser(email, password, name);
 
-      const token = fastify.jwt.sign(getSignPayload(newUser));
+      const token = fastify.jwt.sign(getSignPayload(newUser), {expiresIn: TOKEN_MAX_AGE});
+      setAuthCookie(reply, token);
 
       return reply.status(201).send({
-        token,
         user: {
           id: newUser.id,
           email: newUser.email,
@@ -83,12 +95,11 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
           cvUploadedAt: newUser.cvUploadedAt,
         },
       });
-    }
+    },
   );
 
   fastify.post('/logout', async (request: FastifyRequest, reply: FastifyReply) => {
-    // With JWT, logout is typically handled on the client-side by deleting the token
-    // This endpoint can be used for additional cleanup if needed (e.g., token blacklisting)
+    reply.clearCookie('token', {path: '/'});
     return reply.status(200).send({message: 'Logged out successfully'});
   });
 
