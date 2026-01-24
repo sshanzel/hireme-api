@@ -11,7 +11,10 @@ export async function getFullProfile(userId: string) {
       email: true,
       username: true,
       name: true,
-      links: true,
+      githubUrl: true,
+      linkedinUrl: true,
+      websiteUrl: true,
+      twitterUrl: true,
       summary: true,
       headline: true,
       cvUploadedAt: true,
@@ -74,7 +77,10 @@ export async function getPublicProfile(identifier: string) {
       id: true,
       username: true,
       name: true,
-      links: true,
+      githubUrl: true,
+      linkedinUrl: true,
+      websiteUrl: true,
+      twitterUrl: true,
       summary: true,
       headline: true,
     },
@@ -94,4 +100,48 @@ export async function getPublicProfile(identifier: string) {
       },
     },
   });
+}
+
+interface UpdateProfileParams {
+  username?: string;
+  name?: string;
+  headline?: string | null;
+  summary?: string | null;
+  githubUrl?: string | null;
+  linkedinUrl?: string | null;
+  websiteUrl?: string | null;
+  twitterUrl?: string | null;
+}
+
+export async function updateProfile(userId: string, params: UpdateProfileParams) {
+  const updateData: Record<string, unknown> = {updatedAt: new Date()};
+
+  if (params.username !== undefined) updateData.username = params.username;
+  if (params.name !== undefined) updateData.name = params.name;
+  if (params.headline !== undefined) updateData.headline = params.headline;
+  if (params.summary !== undefined) updateData.summary = params.summary;
+  if (params.githubUrl !== undefined) updateData.githubUrl = params.githubUrl;
+  if (params.linkedinUrl !== undefined) updateData.linkedinUrl = params.linkedinUrl;
+  if (params.websiteUrl !== undefined) updateData.websiteUrl = params.websiteUrl;
+  if (params.twitterUrl !== undefined) updateData.twitterUrl = params.twitterUrl;
+
+  const updated = await db
+    .update(userTable)
+    .set(updateData)
+    .where(eq(userTable.id, userId))
+    .returning({
+      id: userTable.id,
+      email: userTable.email,
+      username: userTable.username,
+      name: userTable.name,
+      headline: userTable.headline,
+      summary: userTable.summary,
+      githubUrl: userTable.githubUrl,
+      linkedinUrl: userTable.linkedinUrl,
+      websiteUrl: userTable.websiteUrl,
+      twitterUrl: userTable.twitterUrl,
+      updatedAt: userTable.updatedAt,
+    });
+
+  return updated[0] || null;
 }

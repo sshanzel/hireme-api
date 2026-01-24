@@ -27,6 +27,10 @@ export const experienceTable = pgTable('experience', {
 
 export type Experience = typeof experienceTable.$inferSelect;
 
-export const experienceRelations = relations(experienceTable, ({many}) => ({
+export const experienceRelations = relations(experienceTable, ({one, many}) => ({
   stories: many(storyTable),
+  user: one(userTable, {
+    fields: [experienceTable.userId],
+    references: [userTable.id],
+  }),
 }));
