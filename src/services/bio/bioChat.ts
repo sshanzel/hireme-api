@@ -111,7 +111,8 @@ export class BioChatSession {
       userId,
       user.name || 'this person',
       profileChat.id,
-      events.map(({content, role, createdAt}) => ({
+      events.map(({content, role, createdAt, id}) => ({
+        id,
         content,
         role: role as 'user' | 'assistant',
         createdAt,
