@@ -3,10 +3,7 @@ import {coachingTable, coachingEventTable, MessageRole} from '../db/schema/index
 import {eq, and} from 'drizzle-orm';
 
 export async function createCoaching(userId: string) {
-  const records = await db
-    .insert(coachingTable)
-    .values({userId})
-    .returning();
+  const records = await db.insert(coachingTable).values({userId}).returning();
 
   return records[0];
 }
@@ -31,6 +28,16 @@ export async function getCoachingById(id: string, userId: string) {
     .where(and(eq(coachingTable.id, id), eq(coachingTable.userId, userId)));
 
   return records[0] || null;
+}
+
+export async function getCoachingSessionsByUser(userId: string) {
+  const sessions = await db.query.coachingTable.findMany({
+    where: eq(coachingTable.userId, userId),
+    with: {events: true},
+    orderBy: (coaching, {desc}) => [desc(coaching.updatedAt)],
+  });
+
+  return sessions.filter(s => s.events.length > 0);
 }
 
 export async function getCoachingWithEvents(id: string, userId: string) {
