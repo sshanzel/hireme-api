@@ -16,9 +16,7 @@ export const storyCanonicalizationSubscription: SubscriptionConfig<StoryCanonica
 
     const story = await db.query.storyTable.findFirst({
       where: eq(storyTable.id, data.storyId),
-      with: {
-        events: true,
-      },
+      with: {events: true},
     });
 
     if (!story || story.events.length < 2) {

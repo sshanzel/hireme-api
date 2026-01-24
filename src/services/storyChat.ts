@@ -8,6 +8,7 @@ import {
   updateStory,
 } from './story.ts';
 import {StoryEventRole} from '../db/schema/storyEvent.ts';
+import {publish} from './pubsub.ts';
 
 export enum IncomingMessageType {
   Chat = 'chat',
@@ -92,12 +93,14 @@ export class StoryChatSession {
   private userId: string;
   private story: StoryData;
   private events: StoryEvent[];
+  private initialSize: number;
 
   private constructor(socket: WebSocket, userId: string, story: StoryData, events: StoryEvent[]) {
     this.socket = socket;
     this.userId = userId;
     this.story = story;
     this.events = events;
+    this.initialSize = events.length;
   }
 
   static async create(
@@ -288,8 +291,15 @@ export class StoryChatSession {
     }
 
     const result = await getStoryWithEvents(this.story.id, this.userId);
+
     if (result && result.events.length === 0) {
       await deleteStory(this.story.id, this.userId);
     }
+
+    if (this.events.length === this.initialSize) {
+      return;
+    }
+
+    await publish('api.v1.story-completed', {storyId: this.story.id});
   }
 }
