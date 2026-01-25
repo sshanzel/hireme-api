@@ -3,7 +3,7 @@ config:
   gcp:region: europe-west1
   hireme-infra:environment: production
   hireme-infra:databaseUrl:
-    secure: AAABAMSjGTStXM9jUZxv69tad9Q2lDiGOcqQU2k61rPGPSEGbjeDA82xSxECsAcsiNJ3zYPV6BzmLZQ6C69bqJKVbfm2sWMrzr8ld0AGZWrPkLgzcDso5GmIzE4O7L3W+Q+5L/AVuLOf/62Vt9Q33q7FP6IWNAfdL6hxgfR559671zCefMHqAA==
+    secure: AAABADXqARNlK1MEyweiSxiVZWReJYmLz48vXduUQnfffbx5oeH8+intpnsQE8JXRU4f65nEbTTZKIwmGsl8VILjR2n9aiLBfU2MApPFYtLPUPKlz+fQkRWNJXrkqF2nFLsnXjygdO299dJKoHEcYDF8eYRjcyZeCc/C+OBnp7UMCNcoPLlh5aPxAO2ZXjt7HElUo8TEIAbTn4ZB25Wx
   hireme-infra:jwtSecret:
     secure: AAABALfJtD3RHNQBcwjbXdiUibsE+JbtiPaMQPVvnPb9H/NkmVL5/2Rbwm29T2seHDdYbMMTjWIRWrYeRcLOD8uYn+548gZ2g6I5Bw==
   hireme-infra:openaiApiKey:
