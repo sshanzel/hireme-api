@@ -1,0 +1,22 @@
+steps:
+  # Build API image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--target=runner'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/core-api/api:latest'
+      - '.'
+
+  # Build Worker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--target=worker'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/core-api/worker:latest'
+      - '.'
+
+images:
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/core-api/api:latest'
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/core-api/worker:latest'
