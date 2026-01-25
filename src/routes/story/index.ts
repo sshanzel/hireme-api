@@ -12,15 +12,15 @@ interface TagExperienceBody {
 
 export default async function storyRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get(
-    '/stories',
+    '/',
     withAuth(async (request: AuthenticatedRequest, reply: FastifyReply) => {
       const stories = await getStoriesByUser(request.user.id);
       return reply.status(200).send({stories});
-    })
+    }),
   );
 
   fastify.delete<{Params: IdParams}>(
-    '/stories/:id',
+    '/:id',
     withAuth(async (request: AuthenticatedRequest, reply: FastifyReply) => {
       const {id} = request.params as IdParams;
       const deleted = await deleteStory(id, request.user.id);
@@ -30,11 +30,11 @@ export default async function storyRoutes(fastify: FastifyInstance): Promise<voi
       }
 
       return reply.status(200).send({message: 'Story deleted successfully'});
-    })
+    }),
   );
 
   fastify.patch<{Params: IdParams; Body: TagExperienceBody}>(
-    '/stories/:id/experience',
+    '/:id/experience',
     withAuth(async (request: AuthenticatedRequest, reply: FastifyReply) => {
       const {id} = request.params as IdParams;
       const {experienceId} = request.body as TagExperienceBody;
@@ -46,6 +46,6 @@ export default async function storyRoutes(fastify: FastifyInstance): Promise<voi
       }
 
       return reply.status(200).send({story: updated});
-    })
+    }),
   );
 }

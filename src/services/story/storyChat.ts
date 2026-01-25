@@ -10,6 +10,7 @@ import {
 } from './story.ts';
 import type {MessageRole} from '../../db/schema/types.ts';
 import {publish} from '../pubsub.ts';
+import {Story} from '../../db/schema/story.ts';
 
 export enum IncomingMessageType {
   Chat = 'chat',
@@ -42,12 +43,6 @@ interface StoryEvent {
   createdAt: Date;
 }
 
-interface StoryData {
-  id: string;
-  title: string | null;
-  tags: string[] | null;
-}
-
 interface StoryDataWithEvents {
   id: string;
   title: string | null;
@@ -76,11 +71,11 @@ type OutgoingMessage = OutgoingConnectedMessage | OutgoingResponseMessage | Outg
 export class StoryChatSession {
   private socket: WebSocket;
   private userId: string;
-  private story: StoryData;
+  private story: Story;
   private events: StoryEvent[];
   private initialSize: number;
 
-  private constructor(socket: WebSocket, userId: string, story: StoryData, events: StoryEvent[]) {
+  private constructor(socket: WebSocket, userId: string, story: Story, events: StoryEvent[]) {
     this.socket = socket;
     this.userId = userId;
     this.story = story;
@@ -104,7 +99,7 @@ export class StoryChatSession {
     return new StoryChatSession(
       socket,
       userId,
-      {id: story.id, title: story.title, tags: story.tags},
+      story,
       events.map(({content, role, createdAt}) => ({content, role, createdAt})),
     );
   }
@@ -122,9 +117,7 @@ export class StoryChatSession {
 
   private getStoryData(): StoryDataWithEvents {
     return {
-      id: this.story.id,
-      title: this.story.title,
-      tags: this.story.tags,
+      ...this.story,
       events: this.events,
     };
   }

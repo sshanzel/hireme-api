@@ -15,7 +15,7 @@ export default async function (fastify: FastifyInstance): Promise<void> {
   fastify.register(authRoutes, {prefix: '/auth'});
   fastify.register(cvRoutes, {prefix: '/cv'});
   fastify.register(documentRoutes, {prefix: '/documents'});
-  fastify.register(storyRoutes, {prefix: '/story'});
+  fastify.register(storyRoutes, {prefix: '/stories'});
   fastify.register(profileRoutes, {prefix: '/profile'});
   fastify.register(experiencesRoutes, {prefix: '/experiences'});
   fastify.register(coachingRoutes, {prefix: '/coachings'});
