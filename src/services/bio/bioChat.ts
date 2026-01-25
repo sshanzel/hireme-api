@@ -88,17 +88,17 @@ export class BioChatSession {
 
   static async create(
     socket: WebSocket,
-    userId: string,
+    identifier: string,
     visitorIp: string,
     origin?: string,
   ): Promise<BioChatSession | null> {
-    const user = await getUserById(userId);
+    const user = await getUserById(identifier);
 
     if (!user) {
       return null;
     }
 
-    const entity = await getOrCreateProfileChat(userId, visitorIp, origin);
+    const entity = await getOrCreateProfileChat(user.id, visitorIp, origin);
 
     if (!entity) {
       return null;
@@ -108,7 +108,7 @@ export class BioChatSession {
 
     return new BioChatSession(
       socket,
-      userId,
+      user.id,
       user.name || 'this person',
       profileChat.id,
       events.map(({content, role, createdAt, id}) => ({

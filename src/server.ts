@@ -43,6 +43,28 @@ fastify.decorate('authenticate', async function (request: FastifyRequest, reply:
   }
 });
 
+// Custom error handler to expose raw database errors in development
+fastify.setErrorHandler(
+  (error: Record<string, unknown>, request: FastifyRequest, reply: FastifyReply) => {
+    const isDev = process.env.NODE_ENV !== 'production';
+
+    // Extract the root cause for database errors
+    const rootCause = error.cause as Error | undefined;
+
+    fastify.log.error({
+      message: error.message,
+      cause: rootCause?.message,
+      stack: isDev ? error.stack : undefined,
+    });
+
+    reply.status(500).send({
+      error: 'Internal Server Error',
+      message: isDev ? error.message : undefined,
+      cause: isDev ? rootCause?.message : undefined,
+    });
+  },
+);
+
 fastify.register(routes);
 
 await fastify.register(websocket, {options: {maxPayload: 1048576}});
@@ -55,7 +77,7 @@ fastify.ready().then(() => {
   const wss = fastify.websocketServer;
 
   heartbeatInterval = setInterval(() => {
-    wss.clients.forEach((client) => {
+    wss.clients.forEach(client => {
       const socket = client as HeartbeatSocket;
       if (socket.isAlive === false) {
         return socket.terminate();

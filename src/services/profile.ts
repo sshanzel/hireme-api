@@ -1,6 +1,7 @@
 import {db} from '../db/index.ts';
-import {userTable, experienceTable, storyTable, storyEventTable} from '../db/schema/index.ts';
+import {experienceTable, storyTable, storyEventTable, userTable} from '../db/schema/index.ts';
 import {eq, exists, and, isNull, desc, or} from 'drizzle-orm';
+import {isUuid} from '../utils/sanitize.ts';
 
 export async function getFullProfile(userId: string) {
   // Get user
@@ -72,7 +73,9 @@ export async function getFullProfile(userId: string) {
 
 export async function getPublicProfile(identifier: string) {
   return db.query.userTable.findFirst({
-    where: or(eq(userTable.id, identifier), eq(userTable.username, identifier)),
+    where: isUuid(identifier)
+      ? or(eq(userTable.id, identifier), eq(userTable.username, identifier))
+      : eq(userTable.username, identifier),
     columns: {
       id: true,
       username: true,

@@ -6,10 +6,11 @@ import {
   MessageRole,
 } from '../../db/schema/index.ts';
 import {eq, and} from 'drizzle-orm';
+import {isUuid} from '../../utils/sanitize.ts';
 
-export async function getUserById(userId: string) {
+export async function getUserById(identifier: string) {
   const user = await db.query.userTable.findFirst({
-    where: eq(userTable.id, userId),
+    where: isUuid(identifier) ? eq(userTable.id, identifier) : eq(userTable.username, identifier),
     columns: {id: true, name: true, email: true},
   });
 

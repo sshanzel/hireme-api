@@ -112,15 +112,15 @@ export default async function websocketRoutes(fastify: FastifyInstance): Promise
     });
   });
 
-  fastify.get('/bio/:id', {websocket: true}, async (connection, req) => {
+  fastify.get('/bio/:identifier', {websocket: true}, async (connection, req) => {
     const origin = req.headers.origin || '';
-    const {id} = req.params as {id: string};
+    const {identifier} = req.params as {identifier: string};
     const visitorIp = req.ip;
 
     const socket = connection as HeartbeatSocket;
 
-    if (!id) {
-      return socket.close(4001, 'Missing user id');
+    if (!identifier) {
+      return socket.close(4001, 'Missing user identifier');
     }
 
     if (allowedOrigins.length > 0 && !allowedOrigins.includes(origin)) {
@@ -130,7 +130,7 @@ export default async function websocketRoutes(fastify: FastifyInstance): Promise
     let session: BioChatSession | null;
 
     try {
-      session = await BioChatSession.create(socket, id, visitorIp, origin);
+      session = await BioChatSession.create(socket, identifier, visitorIp, origin);
 
       if (!session) {
         return socket.close(4004, 'User not found');
