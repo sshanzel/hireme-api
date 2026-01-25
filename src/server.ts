@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
+import fastifyCors from '@fastify/cors';
 import fastifyCookie from '@fastify/cookie';
 import fastifyJwt from '@fastify/jwt';
 import fastifyMultipart from '@fastify/multipart';
@@ -11,6 +12,13 @@ import sockets from './routes/ws/index.ts';
 
 const fastify: FastifyInstance = Fastify({
   logger: true,
+});
+
+// Register CORS
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || [];
+fastify.register(fastifyCors, {
+  origin: allowedOrigins,
+  credentials: true,
 });
 
 // Register cookie plugin
