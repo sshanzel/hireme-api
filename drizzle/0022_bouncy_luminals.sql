@@ -1,4 +1,4 @@
-CREATE EXTENSION vector;
+CREATE EXTENSION IF NOT EXISTS vector;
 
 ALTER TABLE story_index DROP COLUMN vector;
 

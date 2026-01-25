@@ -26,6 +26,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run migrations
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -40,6 +58,8 @@ jobs:
       - name: Build API image
         run: |
           docker build \
+            --platform linux/amd64 \
+            --target runner \
             -t ${{ env.API_IMAGE }}:${{ github.sha }} \
             -t ${{ env.API_IMAGE }}:latest \
             .
@@ -47,6 +67,8 @@ jobs:
       - name: Build Worker image
         run: |
           docker build \
+            --platform linux/amd64 \
+            --target worker \
             -t ${{ env.WORKER_IMAGE }}:${{ github.sha }} \
             -t ${{ env.WORKER_IMAGE }}:latest \
             .
@@ -72,7 +94,6 @@ jobs:
             --image ${{ env.WORKER_IMAGE }}:${{ github.sha }} \
             --region ${{ env.REGION }} \
             --platform managed \
-            --command node,dist/worker.js \
             --quiet
 
       - name: Show deployment URLs

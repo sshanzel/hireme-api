@@ -1,7 +1,7 @@
 import * as gcp from '@pulumi/gcp';
 import * as pulumi from '@pulumi/pulumi';
-import {projectId} from '../config';
 import {pubsubInvokerServiceAccount} from '../iam';
+import {pubsubServiceIdentity, enabledApis} from '../apis';
 
 interface TopicConfig {
   name: string;
@@ -41,23 +41,37 @@ export function createPubSubResources(workerUrl: pulumi.Output<string>): PubSubR
   const subscriptions: gcp.pubsub.Subscription[] = [];
 
   // Single shared dead letter topic (messages here are just dropped after retention)
-  const deadLetterTopic = new gcp.pubsub.Topic('dead-letter', {
-    name: 'api.v1.dead-letter',
-    messageRetentionDuration: '86400s', // 1 day then dropped
-  });
+  const deadLetterTopic = new gcp.pubsub.Topic(
+    'dead-letter',
+    {
+      name: 'api.v1.dead-letter',
+      messageRetentionDuration: '86400s', // 1 day then dropped
+    },
+    {dependsOn: enabledApis}
+  );
 
   // Grant Pub/Sub permission to publish to dead letter topic
-  new gcp.pubsub.TopicIAMMember('dead-letter-publisher', {
-    topic: deadLetterTopic.name,
-    role: 'roles/pubsub.publisher',
-    member: pulumi.interpolate`serviceAccount:service-${projectId}@gcp-sa-pubsub.iam.gserviceaccount.com`,
-  });
+  new gcp.pubsub.TopicIAMMember(
+    'dead-letter-publisher',
+    {
+      topic: deadLetterTopic.name,
+      role: 'roles/pubsub.publisher',
+      member: pubsubServiceIdentity.email.apply(email => `serviceAccount:${email}`),
+    },
+    {
+      dependsOn: [pubsubServiceIdentity],
+    }
+  );
 
   for (const config of topicConfigs) {
-    const topic = new gcp.pubsub.Topic(config.name, {
-      name: config.name,
-      messageRetentionDuration: '86400s',
-    });
+    const topic = new gcp.pubsub.Topic(
+      config.name,
+      {
+        name: config.name,
+        messageRetentionDuration: '86400s',
+      },
+      {dependsOn: enabledApis}
+    );
     topics.push(topic);
 
     const subscription = new gcp.pubsub.Subscription(config.subscriptionName, {

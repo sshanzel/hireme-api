@@ -37,9 +37,15 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 USER appuser
 
-# Default port (API uses 3000, Worker uses 8080)
-EXPOSE 3000 8080
+# API runs on port 3000
+EXPOSE 3000
 
-# Default command runs the API
-# Override with: ["node", "dist/worker.js"] for worker
 CMD ["node", "dist/server.js"]
+
+# Worker stage
+FROM runner AS worker
+
+# Worker runs on port 8080 (set by Cloud Run)
+EXPOSE 8080
+
+CMD ["node", "dist/worker.js"]

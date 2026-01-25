@@ -1,7 +1,8 @@
 import * as pulumi from '@pulumi/pulumi';
-
-// Import all modules to ensure resources are created
 import {projectId, region, environment} from './src/config';
+
+// Enable APIs first (other resources depend on these)
+export {enabledApis, pubsubServiceIdentity} from './src/apis';
 import {repository, repositoryUrl} from './src/artifact-registry';
 import {
   apiServiceAccount,
