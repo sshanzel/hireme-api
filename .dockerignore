@@ -1,0 +1,38 @@
+# Dependencies
+node_modules
+
+# Build output (we build in Docker)
+dist
+
+# Development files
+.env
+.env.*
+*.log
+
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Documentation
+docs
+*.md
+!README.md
+
+# Infrastructure (not needed in app image)
+infra
+
+# Tests
+*.test.ts
+*.spec.ts
+__tests__
+coverage
+
+# Misc
+.DS_Store
+Thumbs.db

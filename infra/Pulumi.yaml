@@ -1,0 +1,8 @@
+name: hireme-infra
+runtime: nodejs
+description: Infrastructure for hireme.dev API
+
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: gcp-typescript

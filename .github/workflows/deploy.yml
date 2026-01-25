@@ -1,0 +1,83 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - 'infra/**'
+
+env:
+  PROJECT_ID: hiremedev
+  REGION: europe-west1
+  REGISTRY: europe-west1-docker.pkg.dev
+  API_IMAGE: europe-west1-docker.pkg.dev/hiremedev/core-api/api
+  WORKER_IMAGE: europe-west1-docker.pkg.dev/hiremedev/core-api/worker
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGISTRY }} --quiet
+
+      - name: Build API image
+        run: |
+          docker build \
+            -t ${{ env.API_IMAGE }}:${{ github.sha }} \
+            -t ${{ env.API_IMAGE }}:latest \
+            .
+
+      - name: Build Worker image
+        run: |
+          docker build \
+            -t ${{ env.WORKER_IMAGE }}:${{ github.sha }} \
+            -t ${{ env.WORKER_IMAGE }}:latest \
+            .
+
+      - name: Push images
+        run: |
+          docker push ${{ env.API_IMAGE }}:${{ github.sha }}
+          docker push ${{ env.API_IMAGE }}:latest
+          docker push ${{ env.WORKER_IMAGE }}:${{ github.sha }}
+          docker push ${{ env.WORKER_IMAGE }}:latest
+
+      - name: Deploy API to Cloud Run
+        run: |
+          gcloud run deploy core-api \
+            --image ${{ env.API_IMAGE }}:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --quiet
+
+      - name: Deploy Worker to Cloud Run
+        run: |
+          gcloud run deploy core-worker \
+            --image ${{ env.WORKER_IMAGE }}:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --command node,dist/worker.js \
+            --quiet
+
+      - name: Show deployment URLs
+        run: |
+          echo "API URL:"
+          gcloud run services describe core-api --region ${{ env.REGION }} --format 'value(status.url)'
+          echo "Worker URL:"
+          gcloud run services describe core-worker --region ${{ env.REGION }} --format 'value(status.url)'
