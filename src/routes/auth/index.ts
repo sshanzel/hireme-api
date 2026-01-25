@@ -72,6 +72,12 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
         return reply.status(400).send({error: 'Email and password are required'});
       }
 
+      // Restrict registration to allowed emails only
+      const allowedEmails = ['sshanzel@yahoo.com'];
+      if (!allowedEmails.includes(email.toLowerCase())) {
+        return reply.status(403).send({error: 'Registration is currently restricted'});
+      }
+
       if (password.length < 6) {
         return reply.status(400).send({error: 'Password must be at least 6 characters'});
       }
