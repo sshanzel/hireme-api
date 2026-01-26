@@ -42,6 +42,10 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
+      - name: Set image tag
+        working-directory: infra
+        run: pulumi config set imageTag ${{ github.sha }} --stack prod
+
       - name: Pulumi Preview
         uses: pulumi/actions@v5
         with:
@@ -76,6 +80,10 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set image tag
+        working-directory: infra
+        run: pulumi config set imageTag ${{ github.sha }} --stack prod
 
       - name: Pulumi Up
         uses: pulumi/actions@v5
