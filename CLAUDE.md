@@ -33,7 +33,7 @@ When writing code, you MUST follow these principles:
 
 - **Prefer relational queries over manual mapping.** Use `db.query.*.findMany({ with: {...} })` to fetch related data instead of manually grouping/mapping objects in JavaScript.
 - Define relations in schema files using `relations()` from `drizzle-orm`.
-- Use `drizzle-kit push` for schema changes (not `drizzle-kit migrate` - has issues applying migrations).
+- Use `drizzle-kit migrate` for schema changes in production. Use `drizzle-kit push` only for rapid local development.
 
 ## Code Style
 
@@ -44,3 +44,16 @@ When writing code, you MUST follow these principles:
 ## OpenAI
 
 - Use Chat Completions API (`openai.chat.completions.create`) for structured outputs - more portable than Responses API.
+
+## Infrastructure
+
+**Follow principle of least privilege.** Think through all required permissions upfront and grant only what's needed - no more, no less.
+
+- **IAM & Permissions**: Identify all specific roles needed for a service account before setup. For this project's CI/CD service account:
+  - `roles/run.admin` - Cloud Run deployments
+  - `roles/artifactregistry.writer` - Push images
+  - `roles/pubsub.admin` - Create topics/subscriptions
+  - `roles/iam.serviceAccountUser` - Deploy as other service accounts
+- **Infrastructure as Code**: Include all dependencies (API enablement, service identities) in Pulumi code for reproducibility. The only manual prerequisite should be authentication.
+- **Migrations**: Run `drizzle-kit migrate` in CI/CD pipelines before deploying new code.
+- **Bootstrap vs Runtime**: Distinguish between one-time setup (bootstrap) and ongoing CI/CD. Document any manual bootstrap steps clearly.
