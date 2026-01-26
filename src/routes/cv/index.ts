@@ -51,12 +51,13 @@ export default async function cvRoutes(fastify: FastifyInstance): Promise<void> 
         });
       }
 
-      await db.transaction(async trx => {
-        const ext = file.filename.split('.').pop();
-        const finalPath = `${UNPARSED_CVS_FOLDER}/${request.user.id}.${ext}`;
-        await uploadFile(buffer, finalPath, file.mimetype);
+      const ext = file.filename.split('.').pop();
+      const finalPath = `${UNPARSED_CVS_FOLDER}/${request.user.id}.${ext}`;
 
-        const record = await db
+      await uploadFile(buffer, finalPath, file.mimetype);
+
+      await db.transaction(async trx => {
+        const record = await trx
           .insert(fileTable)
           .values({
             userId: request.user.id,
@@ -73,7 +74,7 @@ export default async function cvRoutes(fastify: FastifyInstance): Promise<void> 
 
         const fileId = record[0].id;
 
-        await db
+        await trx
           .update(userTable)
           .set({cvUploadedAt: new Date()})
           .where(eq(userTable.id, request.user.id));
@@ -86,6 +87,6 @@ export default async function cvRoutes(fastify: FastifyInstance): Promise<void> 
         fileName: file.filename,
         size: buffer.length,
       });
-    })
+    }),
   );
 }
