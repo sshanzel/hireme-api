@@ -1,5 +1,5 @@
 import * as gcp from '@pulumi/gcp';
-import {region, projectId, workerMaxInstances, databaseUrl, openaiApiKey, gcsBucketName, cvParserApiUrl, cvParserApiKey} from '../config';
+import {region, projectId, workerMaxInstances, databaseUrl, openaiApiKey, gcsBucketName, cvParserApiUrl, cvParserApiKey, imageTag} from '../config';
 import {workerServiceAccount, pubsubInvokerServiceAccount} from '../iam';
 import {enabledApis} from '../apis';
 
@@ -19,7 +19,7 @@ export const workerService = new gcp.cloudrunv2.Service(
       timeout: '540s', // 9 min for long-running tasks like CV parsing
       containers: [
         {
-          image: `${region}-docker.pkg.dev/${projectId}/core-api/worker:latest`,
+          image: `${region}-docker.pkg.dev/${projectId}/core-api/worker:${imageTag}`,
           ports: {containerPort: 8080},
           resources: {
             limits: {

@@ -21,6 +21,7 @@ export const cvParserApiUrl = config.get('cvParserApiUrl') ?? 'https://api.edena
 // Optional configs with defaults
 export const apiMaxInstances = config.getNumber('apiMaxInstances') ?? 3;
 export const workerMaxInstances = config.getNumber('workerMaxInstances') ?? 2;
+export const imageTag = config.get('imageTag') ?? 'latest';
 
 // Derived values
 export const artifactRegistryUrl = `${region}-docker.pkg.dev/${projectId}/core-api`;

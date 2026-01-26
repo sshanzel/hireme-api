@@ -1,5 +1,5 @@
 import * as gcp from '@pulumi/gcp';
-import {region, projectId, apiMaxInstances, databaseUrl, jwtSecret, openaiApiKey, gcsBucketName, allowedOrigins} from '../config';
+import {region, projectId, apiMaxInstances, databaseUrl, jwtSecret, openaiApiKey, gcsBucketName, allowedOrigins, imageTag} from '../config';
 import {apiServiceAccount} from '../iam';
 import {enabledApis} from '../apis';
 
@@ -19,7 +19,7 @@ export const apiService = new gcp.cloudrunv2.Service(
       timeout: '300s', // 5 min for WebSocket
       containers: [
         {
-          image: `${region}-docker.pkg.dev/${projectId}/core-api/api:latest`,
+          image: `${region}-docker.pkg.dev/${projectId}/core-api/api:${imageTag}`,
           ports: {containerPort: 3000},
           resources: {
             limits: {

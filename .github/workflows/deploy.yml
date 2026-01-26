@@ -89,6 +89,12 @@ jobs:
         working-directory: infra
         run: pnpm install
 
+      - name: Set image tag
+        working-directory: infra
+        run: pulumi config set imageTag ${{ github.sha }} --stack prod
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+
       - name: Deploy with Pulumi
         uses: pulumi/actions@v5
         with:
