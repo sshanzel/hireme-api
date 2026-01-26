@@ -20,6 +20,7 @@ export enum ErrorCode {
   StorageError = 'STORAGE_ERROR',
   NotFound = 'NOT_FOUND',
   RateLimited = 'RATE_LIMITED',
+  Busy = 'BUSY',
 }
 
 interface IncomingChatMessage {
@@ -69,6 +70,7 @@ export class BioChatSession {
   private profileChatId: string;
   private events: ProfileChatEventData[];
   private visitorIp: string;
+  private isProcessing = false;
 
   private constructor(
     socket: WebSocket,
@@ -230,6 +232,11 @@ export class BioChatSession {
   }
 
   async handleMessage(rawMessage: string): Promise<void> {
+    if (this.isProcessing) {
+      this.sendError('Please wait for the current response to complete.', ErrorCode.Busy);
+      return;
+    }
+
     const {message, error: parseError} = this.parseMessage(rawMessage);
 
     if (parseError || !message) {
@@ -237,10 +244,15 @@ export class BioChatSession {
       return;
     }
 
-    switch (message.type) {
-      case IncomingMessageType.Chat:
-        await this.handleChat(message.data);
-        break;
+    this.isProcessing = true;
+    try {
+      switch (message.type) {
+        case IncomingMessageType.Chat:
+          await this.handleChat(message.data);
+          break;
+      }
+    } finally {
+      this.isProcessing = false;
     }
   }
 

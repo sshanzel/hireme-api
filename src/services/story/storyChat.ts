@@ -28,6 +28,7 @@ export enum ErrorCode {
   GenerationError = 'GENERATION_ERROR',
   StorageError = 'STORAGE_ERROR',
   NotFound = 'NOT_FOUND',
+  Busy = 'BUSY',
 }
 
 interface IncomingChatMessage {
@@ -74,6 +75,7 @@ export class StoryChatSession {
   private story: Story;
   private events: StoryEvent[];
   private initialSize: number;
+  private isProcessing = false;
 
   private constructor(socket: WebSocket, userId: string, story: Story, events: StoryEvent[]) {
     this.socket = socket;
@@ -218,6 +220,11 @@ export class StoryChatSession {
   }
 
   async handleMessage(rawMessage: string): Promise<void> {
+    if (this.isProcessing) {
+      this.sendError('Please wait for the current response to complete.', ErrorCode.Busy);
+      return;
+    }
+
     const {message, error: parseError} = this.parseMessage(rawMessage);
 
     if (parseError || !message) {
@@ -225,10 +232,15 @@ export class StoryChatSession {
       return;
     }
 
-    switch (message.type) {
-      case IncomingMessageType.Chat:
-        await this.handleChat(message.data);
-        break;
+    this.isProcessing = true;
+    try {
+      switch (message.type) {
+        case IncomingMessageType.Chat:
+          await this.handleChat(message.data);
+          break;
+      }
+    } finally {
+      this.isProcessing = false;
     }
   }
 
