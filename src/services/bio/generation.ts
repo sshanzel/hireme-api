@@ -136,10 +136,10 @@ export async function generateProfileResponse(
     throw new Error('No user message found');
   }
 
-  const [relevantContext, experiences] = await Promise.all([
-    searchProfile(latestUserMessage.content, userId, 5),
-    getUserExperiences(userId),
-  ]);
+  const experiences = await getUserExperiences(userId);
+  const timeline = formatExperienceTimeline(experiences);
+  const enrichedQuery = `${timeline}\n\nQuery: ${latestUserMessage.content}`;
+  const relevantContext = await searchProfile(enrichedQuery, userId, 5);
 
   const storyIds = relevantContext.filter(c => c.type === 'story').map(c => c.sourceId);
   const experienceMap = await getStoryExperienceMap(storyIds, experiences);
