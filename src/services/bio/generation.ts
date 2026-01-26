@@ -68,7 +68,10 @@ async function getStoryExperienceMap(
   );
 }
 
-function formatContextItem(c: ProfileSearchResult, experienceMap: Map<string, ExperienceInfo>): string {
+function formatContextItem(
+  c: ProfileSearchResult,
+  experienceMap: Map<string, ExperienceInfo>,
+): string {
   if (c.type === 'story') {
     const exp = experienceMap.get(c.sourceId);
     if (exp) {
@@ -107,7 +110,10 @@ Guidelines:
 Your career timeline:
 ${timeline}
 
-Relevant context for the current question:
+You can use the timeline above to answer time-based questions.
+
+Here is some relevant context to help you answer questions:
+
 ${formattedContext}
 `;
 }
