@@ -1,5 +1,5 @@
 import {db} from '../../db/index.ts';
-import {storyTable, storyEventTable, MessageRole} from '../../db/schema/index.ts';
+import {storyTable, storyEventTable, storyIndexTable, MessageRole} from '../../db/schema/index.ts';
 import {eq, and} from 'drizzle-orm';
 
 export async function createStory(userId: string, experienceId?: string) {
@@ -21,9 +21,11 @@ export async function deleteStory(id: string, userId: string) {
     return false;
   }
 
-  // Delete events first (cascade)
-  await db.delete(storyEventTable).where(eq(storyEventTable.storyId, id));
-  await db.delete(storyTable).where(eq(storyTable.id, id));
+  await db.transaction(async trx => {
+    await trx.delete(storyEventTable).where(eq(storyEventTable.storyId, id));
+    await trx.delete(storyIndexTable).where(eq(storyIndexTable.storyId, id));
+    await trx.delete(storyTable).where(eq(storyTable.id, id));
+  });
 
   return true;
 }
