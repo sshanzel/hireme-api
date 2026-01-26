@@ -61,7 +61,6 @@ jobs:
             --platform linux/amd64 \
             --target runner \
             -t ${{ env.API_IMAGE }}:${{ github.sha }} \
-            -t ${{ env.API_IMAGE }}:latest \
             .
 
       - name: Build Worker image
@@ -70,15 +69,12 @@ jobs:
             --platform linux/amd64 \
             --target worker \
             -t ${{ env.WORKER_IMAGE }}:${{ github.sha }} \
-            -t ${{ env.WORKER_IMAGE }}:latest \
             .
 
       - name: Push images
         run: |
           docker push ${{ env.API_IMAGE }}:${{ github.sha }}
-          docker push ${{ env.API_IMAGE }}:latest
           docker push ${{ env.WORKER_IMAGE }}:${{ github.sha }}
-          docker push ${{ env.WORKER_IMAGE }}:latest
 
       - name: Setup Node.js for Pulumi
         uses: actions/setup-node@v4
