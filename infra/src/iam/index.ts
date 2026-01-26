@@ -36,12 +36,12 @@ export const pubsubInvokerServiceAccount = new gcp.serviceaccount.Account(
   {dependsOn: enabledApis}
 );
 
-// API permissions: Pub/Sub editor, Storage admin
+// API permissions: Pub/Sub publisher, Storage admin
 new gcp.projects.IAMMember(
-  'api-pubsub-editor',
+  'api-pubsub-publisher',
   {
     project: projectId,
-    role: 'roles/pubsub.editor',
+    role: 'roles/pubsub.publisher',
     member: pulumi.interpolate`serviceAccount:${apiServiceAccount.email}`,
   },
   {dependsOn: enabledApis}
