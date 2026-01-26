@@ -88,3 +88,14 @@ new gcp.projects.IAMMember(
   },
   {dependsOn: enabledApis}
 );
+
+// Worker needs to sign URLs for GCS
+new gcp.serviceaccount.IAMMember(
+  'worker-self-token-creator',
+  {
+    serviceAccountId: workerServiceAccount.name,
+    role: 'roles/iam.serviceAccountTokenCreator',
+    member: pulumi.interpolate`serviceAccount:${workerServiceAccount.email}`,
+  },
+  {dependsOn: enabledApis}
+);
