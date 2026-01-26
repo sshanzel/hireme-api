@@ -8,6 +8,9 @@ import {experienceIndexingSubscription} from './subscriptions/experienceIndexing
 // Detect if running in Cloud Run
 const isCloudRun = process.env.K_SERVICE !== undefined;
 
+// Kill switch - set WORKER_DISABLED=true to stop processing
+const isWorkerDisabled = () => process.env.WORKER_DISABLED === 'true';
+
 interface PubSubPushMessage {
   message: {
     data: string; // base64 encoded
@@ -26,6 +29,11 @@ async function startHttpServer() {
 
   // CV uploaded event handler
   app.post('/events/cv-uploaded', async (request, reply) => {
+    if (isWorkerDisabled()) {
+      console.log('[Kill Switch] Worker disabled, skipping cv-uploaded');
+      return reply.status(200).send('Disabled');
+    }
+
     const body = request.body as PubSubPushMessage;
     const data = JSON.parse(Buffer.from(body.message.data, 'base64').toString());
 
@@ -42,6 +50,11 @@ async function startHttpServer() {
 
   // Story completed event handler
   app.post('/events/story-completed', async (request, reply) => {
+    if (isWorkerDisabled()) {
+      console.log('[Kill Switch] Worker disabled, skipping story-completed');
+      return reply.status(200).send('Disabled');
+    }
+
     const body = request.body as PubSubPushMessage;
     const data = JSON.parse(Buffer.from(body.message.data, 'base64').toString());
 
@@ -58,6 +71,11 @@ async function startHttpServer() {
 
   // Experience updated event handler
   app.post('/events/experience-updated', async (request, reply) => {
+    if (isWorkerDisabled()) {
+      console.log('[Kill Switch] Worker disabled, skipping experience-updated');
+      return reply.status(200).send('Disabled');
+    }
+
     const body = request.body as PubSubPushMessage;
     const data = JSON.parse(Buffer.from(body.message.data, 'base64').toString());
 
