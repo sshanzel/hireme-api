@@ -65,6 +65,10 @@ const STORY_TELLER_INSTRUCTIONS = `
 
   You are another person listening to the story, don't speak as if you are the user.
 
+  If there are any inconsistencies in the user's story, gently ask for clarification at the end of your response. Similarly, if it is not clear about what the role the user performed in the story, you can ask for clarification.
+
+  Note: only ask one question at most if needed, ONLY IF really necessary.
+
 `;
 
 const format = {
