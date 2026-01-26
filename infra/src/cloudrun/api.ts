@@ -16,7 +16,7 @@ export const apiService = new gcp.cloudrunv2.Service(
         minInstanceCount: 0,
         maxInstanceCount: apiMaxInstances,
       },
-      timeout: '300s', // 5 min for WebSocket
+      timeout: '300s',
       containers: [
         {
           image: `${region}-docker.pkg.dev/${projectId}/core-api/api:${imageTag}`,
@@ -27,6 +27,7 @@ export const apiService = new gcp.cloudrunv2.Service(
               cpu: '1',
             },
             cpuIdle: false, // Keep CPU allocated for WebSocket
+            startupCpuBoost: true,
           },
           envs: [
             {name: 'NODE_ENV', value: 'production'},

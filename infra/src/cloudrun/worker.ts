@@ -27,6 +27,7 @@ export const workerService = new gcp.cloudrunv2.Service(
               cpu: '1',
             },
             cpuIdle: true, // CPU can be throttled when idle
+            startupCpuBoost: true,
           },
           envs: [
             {name: 'NODE_ENV', value: 'production'},
