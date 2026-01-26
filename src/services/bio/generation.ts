@@ -1,9 +1,9 @@
 import {OpenAI} from 'openai';
 import {z} from 'zod';
 import {zodResponseFormat} from 'openai/helpers/zod';
-import {eq, inArray} from 'drizzle-orm';
+import {eq, inArray, desc} from 'drizzle-orm';
 import {db} from '../../db/index.ts';
-import {storyTable, experienceTable} from '../../db/schema/index.ts';
+import {storyTable, experienceTable, type Experience} from '../../db/schema/index.ts';
 import {searchProfile, ProfileSearchResult} from './search.ts';
 
 const DEFAULT_MODEL = 'gpt-4o-mini';
@@ -19,21 +19,52 @@ interface ExperienceInfo {
   organization: string | null;
 }
 
-async function getStoryExperienceMap(storyIds: string[]): Promise<Map<string, ExperienceInfo>> {
+async function getUserExperiences(userId: string): Promise<Experience[]> {
+  return db
+    .select()
+    .from(experienceTable)
+    .where(eq(experienceTable.userId, userId))
+    .orderBy(desc(experienceTable.startDate));
+}
+
+function formatDate(date: Date): string {
+  return date.toLocaleDateString('en-US', {month: 'short', year: 'numeric'});
+}
+
+function formatExperienceTimeline(experiences: Experience[]): string {
+  if (experiences.length === 0) return 'No experiences documented.';
+
+  return experiences
+    .map(exp => {
+      const dateRange = exp.endDate
+        ? `${formatDate(exp.startDate)} - ${formatDate(exp.endDate)}`
+        : `${formatDate(exp.startDate)} - Present`;
+      const org = exp.organization ? ` at ${exp.organization}` : '';
+      return `- ${exp.title}${org} (${dateRange})`;
+    })
+    .join('\n');
+}
+
+async function getStoryExperienceMap(
+  storyIds: string[],
+  experiences: Experience[],
+): Promise<Map<string, ExperienceInfo>> {
   if (storyIds.length === 0) return new Map();
 
   const stories = await db
-    .select({
-      storyId: storyTable.id,
-      experienceTitle: experienceTable.title,
-      experienceOrg: experienceTable.organization,
-    })
+    .select({id: storyTable.id, experienceId: storyTable.experienceId})
     .from(storyTable)
-    .innerJoin(experienceTable, eq(storyTable.experienceId, experienceTable.id))
     .where(inArray(storyTable.id, storyIds));
 
+  const experienceById = new Map(experiences.map(e => [e.id, e]));
+
   return new Map(
-    stories.map(s => [s.storyId, {title: s.experienceTitle, organization: s.experienceOrg}]),
+    stories
+      .filter(s => s.experienceId && experienceById.has(s.experienceId))
+      .map(s => {
+        const exp = experienceById.get(s.experienceId!)!;
+        return [s.id, {title: exp.title, organization: exp.organization}];
+      }),
   );
 }
 
@@ -50,9 +81,11 @@ function formatContextItem(c: ProfileSearchResult, experienceMap: Map<string, Ex
 
 function buildSystemPrompt(
   userName: string,
+  experiences: Experience[],
   context: ProfileSearchResult[],
   experienceMap: Map<string, ExperienceInfo>,
 ): string {
+  const timeline = formatExperienceTimeline(experiences);
   const formattedContext =
     context.length > 0
       ? context.map(c => formatContextItem(c, experienceMap)).join('\n\n')
@@ -71,7 +104,10 @@ Guidelines:
 - You don't need to overly prettify the situation; just be clear and straightforward while adding the key points
 - Always answer as yourself, never as an AI or third party
 
-Your documented experiences:
+Your career timeline:
+${timeline}
+
+Relevant context for the current question:
 ${formattedContext}
 `;
 }
@@ -93,12 +129,15 @@ export async function generateProfileResponse(
     throw new Error('No user message found');
   }
 
-  const relevantContext = await searchProfile(latestUserMessage.content, userId, 5);
+  const [relevantContext, experiences] = await Promise.all([
+    searchProfile(latestUserMessage.content, userId, 5),
+    getUserExperiences(userId),
+  ]);
 
   const storyIds = relevantContext.filter(c => c.type === 'story').map(c => c.sourceId);
-  const experienceMap = await getStoryExperienceMap(storyIds);
+  const experienceMap = await getStoryExperienceMap(storyIds, experiences);
 
-  const systemPrompt = buildSystemPrompt(userName, relevantContext, experienceMap);
+  const systemPrompt = buildSystemPrompt(userName, experiences, relevantContext, experienceMap);
 
   const messages: OpenAI.ChatCompletionMessageParam[] = history.map(msg => ({
     role: msg.role,
