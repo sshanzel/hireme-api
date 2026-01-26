@@ -6,7 +6,6 @@ on:
     paths-ignore:
       - 'docs/**'
       - '*.md'
-      - 'infra/**'
 
 env:
   PROJECT_ID: hiremedev

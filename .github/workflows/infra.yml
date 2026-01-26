@@ -1,10 +1,6 @@
-name: Infrastructure
+name: Infrastructure Preview
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'infra/**'
   pull_request:
     branches: [main]
     paths:
@@ -17,7 +13,6 @@ jobs:
   preview:
     name: Preview
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
 
     steps:
       - name: Checkout
@@ -50,44 +45,5 @@ jobs:
         uses: pulumi/actions@v5
         with:
           command: preview
-          stack-name: prod
-          work-dir: infra
-
-  deploy:
-    name: Deploy
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Install dependencies
-        working-directory: infra
-        run: pnpm install
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-      - name: Set image tag
-        working-directory: infra
-        run: pulumi config set imageTag ${{ github.sha }} --stack prod
-
-      - name: Pulumi Up
-        uses: pulumi/actions@v5
-        with:
-          command: up
           stack-name: prod
           work-dir: infra
