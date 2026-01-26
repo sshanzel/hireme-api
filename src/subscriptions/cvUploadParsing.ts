@@ -3,7 +3,7 @@ import {db} from '../db/index.ts';
 import {FileStatus, fileTable} from '../db/schema/file.ts';
 import {experienceTable, ExperienceType} from '../db/schema/experience.ts';
 import type {SubscriptionConfig} from './types.ts';
-import {getSignedUrl} from '../services/storage.ts';
+import {deleteFile, getSignedUrl} from '../services/storage.ts';
 import {parseResume, type Entry, type Entry2, type ExtractedData} from '../services/parser.ts';
 import {userParsedArchive} from '../db/schema/userParsedArchive.ts';
 import {userTable} from '../db/schema/user.ts';
@@ -124,7 +124,7 @@ export const cvUploadParsingSubscription: SubscriptionConfig<CvUploadedEvent> = 
 
     // Map and insert work experiences
     const workExperiences = extractedData.work_experience.entries.map(exp =>
-      mapWorkExperience(file.userId, exp)
+      mapWorkExperience(file.userId, exp),
     );
     if (workExperiences.length > 0) {
       await db.insert(experienceTable).values(workExperiences);
@@ -133,7 +133,7 @@ export const cvUploadParsingSubscription: SubscriptionConfig<CvUploadedEvent> = 
 
     // Map and insert education
     const educationRecords = extractedData.education.entries.map(edu =>
-      mapEducation(file.userId, edu)
+      mapEducation(file.userId, edu),
     );
     if (educationRecords.length > 0) {
       await db.insert(experienceTable).values(educationRecords);
@@ -147,6 +147,8 @@ export const cvUploadParsingSubscription: SubscriptionConfig<CvUploadedEvent> = 
       .update(fileTable)
       .set({status: FileStatus.Processed, updatedAt: new Date()})
       .where(eq(fileTable.id, data.fileId));
+
+    await deleteFile(file.gcsPath);
 
     console.log(`CV parsing complete for file id: ${data.fileId}`);
   },

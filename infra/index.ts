@@ -11,6 +11,7 @@ import {
 } from './src/iam';
 import {apiService, apiUrl, workerService, workerUrl} from './src/cloudrun';
 import {createPubSubResources, topicNames} from './src/pubsub';
+import {cvUploadsBucket, bucketName} from './src/storage';
 
 // Create Pub/Sub resources with worker URL
 const pubsub = createPubSubResources(workerUrl);
@@ -35,6 +36,9 @@ export const outputs = {
 
   // Pub/Sub topics
   topics: topicNames,
+
+  // Storage
+  bucketName: bucketName,
 };
 
 // Export individual values for easy access
