@@ -29,7 +29,7 @@ export function withAuth(
 }
 
 /**
- * Verifies JWT from cookies and returns authenticated user for WebSocket handlers.
+ * Verifies JWT from cookies or query param and returns authenticated user for WebSocket handlers.
  * Closes socket with 4001 if unauthorized.
  */
 export async function getSocketUser(
@@ -40,7 +40,19 @@ export async function getSocketUser(
     await req.jwtVerify();
     return req.user as AuthenticatedUser;
   } catch {
-    socket.close(4001, 'Unauthorized');
-    return null;
+    const {token} = req.query as {token?: string};
+
+    if (!token) {
+      socket.close(4001, 'Unauthorized');
+      return null;
+    }
+
+    try {
+      const decoded = req.server.jwt.verify<AuthenticatedUser>(token);
+      return decoded;
+    } catch {
+      socket.close(4001, 'Unauthorized');
+      return null;
+    }
   }
 }

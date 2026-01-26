@@ -70,6 +70,7 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
           name: user.name,
           cvUploadedAt: user.cvUploadedAt,
         },
+        token,
       });
     },
   );
@@ -111,6 +112,7 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
           name: newUser.name,
           cvUploadedAt: newUser.cvUploadedAt,
         },
+        token,
       });
     },
   );
