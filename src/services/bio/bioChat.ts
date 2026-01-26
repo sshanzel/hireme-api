@@ -206,6 +206,13 @@ export class BioChatSession {
   }
 
   private async handleChat(content: string): Promise<void> {
+    const userMessages = this.events.filter(e => e.role === 'user').length;
+
+    if (userMessages >= 10) {
+      this.sendError('You have reached the maximum number of questions.', ErrorCode.RateLimited);
+      return;
+    }
+
     if (this.isRateLimited()) {
       this.sendError('Too many messages. Please wait a moment.', ErrorCode.RateLimited);
       return;
