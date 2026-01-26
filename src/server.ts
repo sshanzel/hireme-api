@@ -21,7 +21,38 @@ for (const envVar of requiredEnvVars) {
 }
 
 const fastify: FastifyInstance = Fastify({
-  logger: true,
+  logger: {
+    level: process.env.LOG_LEVEL || 'info',
+    formatters: {
+      level(label) {
+        // Map pino levels to GCP severity for Cloud Logging
+        const severityMap: Record<string, string> = {
+          trace: 'DEBUG',
+          debug: 'DEBUG',
+          info: 'INFO',
+          warn: 'WARNING',
+          error: 'ERROR',
+          fatal: 'CRITICAL',
+        };
+        return {severity: severityMap[label] || 'DEFAULT'};
+      },
+    },
+    serializers: {
+      req(request) {
+        return {
+          method: request.method,
+          url: request.url,
+          hostname: request.hostname,
+          remoteAddress: request.ip,
+        };
+      },
+      res(reply) {
+        return {
+          statusCode: reply.statusCode,
+        };
+      },
+    },
+  },
   trustProxy: true, // Required for rate limiting behind Cloud Run proxy
 });
 
@@ -87,6 +118,11 @@ fastify.setErrorHandler(
       message: error.message,
       cause: rootCause?.message,
       stack: isDev ? error.stack : undefined,
+      request: {
+        method: request.method,
+        url: request.url,
+        userId: (request.user as {id?: string})?.id,
+      },
     });
 
     reply.status(500).send({
