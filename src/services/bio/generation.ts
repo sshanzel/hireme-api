@@ -40,7 +40,8 @@ function formatExperienceTimeline(experiences: Experience[]): string {
         ? `${formatDate(exp.startDate)} - ${formatDate(exp.endDate)}`
         : `${formatDate(exp.startDate)} - Present`;
       const org = exp.organization ? ` at ${exp.organization}` : '';
-      return `- ${exp.title}${org} (${dateRange})`;
+      const type = exp.type.charAt(0).toUpperCase() + exp.type.slice(1);
+      return `- [${type}] ${exp.title}${org} (${dateRange})`;
     })
     .join('\n');
 }
