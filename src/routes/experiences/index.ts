@@ -8,6 +8,7 @@ import {
   deleteExperience,
 } from '../../services/experience/experience.ts';
 import {ExperienceType} from '../../db/schema/experience.ts';
+import {publish} from '../../services/pubsub.ts';
 
 const experienceTypeSchema = z.enum(ExperienceType);
 
@@ -64,6 +65,8 @@ export default async function experiencesRoutes(fastify: FastifyInstance): Promi
         skills: body.skills,
       });
 
+      await publish('api.v1.experience-updated', {experienceId: experience.id});
+
       return reply.status(201).send({experience});
     }),
   );
@@ -92,6 +95,8 @@ export default async function experiencesRoutes(fastify: FastifyInstance): Promi
       if (!updated) {
         return reply.status(404).send({error: 'Experience not found'});
       }
+
+      await publish('api.v1.experience-updated', {experienceId: updated.id});
 
       return reply.status(200).send({experience: updated});
     }),

@@ -8,6 +8,7 @@ import {parseResume, type Entry, type Entry2, type ExtractedData} from '../servi
 import {userParsedArchive} from '../db/schema/userParsedArchive.ts';
 import {userTable} from '../db/schema/user.ts';
 import {sanitizeBullets} from '../utils/sanitize.ts';
+import {publish} from '../services/pubsub.ts';
 
 interface CvUploadedEvent {
   fileId: string;
@@ -122,22 +123,28 @@ export const cvUploadParsingSubscription: SubscriptionConfig<CvUploadedEvent> = 
 
     const extractedData = parsedData.output.extracted_data;
 
-    // Map and insert work experiences
     const workExperiences = extractedData.work_experience.entries.map(exp =>
       mapWorkExperience(file.userId, exp),
     );
     if (workExperiences.length > 0) {
-      await db.insert(experienceTable).values(workExperiences);
-      console.log(`Inserted ${workExperiences.length} work experiences`);
+      const inserted = await db.insert(experienceTable).values(workExperiences).returning({id: experienceTable.id});
+      console.log(`Inserted ${inserted.length} work experiences`);
+
+      for (const exp of inserted) {
+        await publish('api.v1.experience-updated', {experienceId: exp.id});
+      }
     }
 
-    // Map and insert education
     const educationRecords = extractedData.education.entries.map(edu =>
       mapEducation(file.userId, edu),
     );
     if (educationRecords.length > 0) {
-      await db.insert(experienceTable).values(educationRecords);
-      console.log(`Inserted ${educationRecords.length} education records`);
+      const inserted = await db.insert(experienceTable).values(educationRecords).returning({id: experienceTable.id});
+      console.log(`Inserted ${inserted.length} education records`);
+
+      for (const exp of inserted) {
+        await publish('api.v1.experience-updated', {experienceId: exp.id});
+      }
     }
 
     const userInfo = mapUserInfo(extractedData);
