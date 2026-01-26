@@ -16,9 +16,20 @@ const ALLOWED_MIME_TYPES = [
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
+// Rate limit for CV uploads - stricter to prevent parser API cost abuse
+const cvUploadRateLimit = {
+  max: 3,
+  timeWindow: '1 hour',
+  errorResponseBuilder: () => ({
+    error: 'Too Many Requests',
+    message: 'Upload limit reached. Please try again later.',
+  }),
+};
+
 export default async function cvRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post(
     '/upload',
+    {config: {rateLimit: cvUploadRateLimit}},
     withAuth(async (request: AuthenticatedRequest, reply) => {
       const file = await request.file();
 

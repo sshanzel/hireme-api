@@ -33,9 +33,20 @@ const setAuthCookie = (reply: FastifyReply, token: string) => {
   });
 };
 
+// Rate limit config for auth endpoints (stricter than global)
+const authRateLimit = {
+  max: 5,
+  timeWindow: '1 minute',
+  errorResponseBuilder: () => ({
+    error: 'Too Many Requests',
+    message: 'Too many attempts. Please try again later.',
+  }),
+};
+
 export default async function authRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.post<{Body: LoginBody}>(
     '/login',
+    {config: {rateLimit: authRateLimit}},
     async (request: FastifyRequest<{Body: LoginBody}>, reply: FastifyReply) => {
       const {email, password} = request.body;
 
@@ -65,6 +76,7 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
 
   fastify.post<{Body: SignupBody}>(
     '/signup',
+    {config: {rateLimit: authRateLimit}},
     async (request: FastifyRequest<{Body: SignupBody}>, reply: FastifyReply) => {
       const {email, password, name} = request.body;
 
@@ -72,20 +84,19 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
         return reply.status(400).send({error: 'Email and password are required'});
       }
 
-      // Restrict registration to allowed emails only
-      const allowedEmails = ['sshanzel@yahoo.com'];
-      if (!allowedEmails.includes(email.toLowerCase())) {
-        return reply.status(403).send({error: 'Registration is currently restricted'});
-      }
-
       if (password.length < 6) {
         return reply.status(400).send({error: 'Password must be at least 6 characters'});
       }
 
+      // Restrict registration to allowed emails only
+      const allowedEmails = ['sshanzel@yahoo.com'];
+      const isAllowed = allowedEmails.includes(email.toLowerCase());
       const existingUser = await getUserByEmail(email);
 
-      if (existingUser) {
-        return reply.status(409).send({error: 'User with this email already exists'});
+      // Normalize response to prevent email enumeration
+      // Don't reveal if email exists vs restricted
+      if (!isAllowed || existingUser) {
+        return reply.status(403).send({error: 'Registration is not available for this email'});
       }
 
       const newUser = await createUser(email, password, name);

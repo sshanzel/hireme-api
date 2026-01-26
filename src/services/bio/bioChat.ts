@@ -1,6 +1,7 @@
 import type {WebSocket} from '@fastify/websocket';
 import {generateProfileResponse, type ProfileResponse} from './generation.ts';
 import {createProfileChatEvent, getOrCreateProfileChat, getUserById} from './bio.ts';
+import {isBioChatRateLimited} from '../../utils/ws-rate-limit.ts';
 
 export enum IncomingMessageType {
   Chat = 'chat',
@@ -61,16 +62,13 @@ interface OutgoingErrorMessage {
 
 type OutgoingMessage = OutgoingConnectedMessage | OutgoingResponseMessage | OutgoingErrorMessage;
 
-const RATE_LIMIT_WINDOW_MS = 60000;
-const MAX_MESSAGES_PER_WINDOW = 5;
-
 export class BioChatSession {
   private socket: WebSocket;
   private userId: string;
   private userName: string;
   private profileChatId: string;
   private events: ProfileChatEventData[];
-  private messageTimestamps: number[] = [];
+  private visitorIp: string;
 
   private constructor(
     socket: WebSocket,
@@ -78,12 +76,14 @@ export class BioChatSession {
     userName: string,
     profileChatId: string,
     events: ProfileChatEventData[],
+    visitorIp: string,
   ) {
     this.socket = socket;
     this.userId = userId;
     this.userName = userName;
     this.profileChatId = profileChatId;
     this.events = events;
+    this.visitorIp = visitorIp;
   }
 
   static async create(
@@ -117,6 +117,7 @@ export class BioChatSession {
         role: role as 'user' | 'assistant',
         createdAt,
       })),
+      visitorIp,
     );
   }
 
@@ -177,15 +178,8 @@ export class BioChatSession {
   }
 
   private isRateLimited(): boolean {
-    const now = Date.now();
-    this.messageTimestamps = this.messageTimestamps.filter(ts => now - ts < RATE_LIMIT_WINDOW_MS);
-
-    if (this.messageTimestamps.length >= MAX_MESSAGES_PER_WINDOW) {
-      return true;
-    }
-
-    this.messageTimestamps.push(now);
-    return false;
+    // Use shared IP-based rate limiter to prevent bypass by reconnecting
+    return isBioChatRateLimited(this.visitorIp);
   }
 
   private async saveEvent(content: string, role: 'user' | 'assistant'): Promise<void> {

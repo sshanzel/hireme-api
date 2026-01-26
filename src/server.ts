@@ -4,14 +4,25 @@ import fastifyCors from '@fastify/cors';
 import fastifyCookie from '@fastify/cookie';
 import fastifyJwt from '@fastify/jwt';
 import fastifyMultipart from '@fastify/multipart';
+import fastifyRateLimit from '@fastify/rate-limit';
 import websocket from '@fastify/websocket';
 import type {FastifyInstance, FastifyReply, FastifyRequest} from 'fastify';
 import type {HeartbeatSocket} from './types/websocket.ts';
 import routes from './routes/index.ts';
 import sockets from './routes/ws/index.ts';
 
+// Validate critical environment variables
+const requiredEnvVars = ['JWT_SECRET', 'DATABASE_URL'];
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    console.error(`Missing required environment variable: ${envVar}`);
+    process.exit(1);
+  }
+}
+
 const fastify: FastifyInstance = Fastify({
   logger: true,
+  trustProxy: true, // Required for rate limiting behind Cloud Run proxy
 });
 
 // Register CORS
@@ -19,6 +30,19 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()
 fastify.register(fastifyCors, {
   origin: allowedOrigins,
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  exposedHeaders: ['Set-Cookie'],
+});
+
+// Register global rate limiting
+fastify.register(fastifyRateLimit, {
+  max: 100, // 100 requests per minute globally
+  timeWindow: '1 minute',
+  errorResponseBuilder: () => ({
+    error: 'Too Many Requests',
+    message: 'Rate limit exceeded. Please slow down.',
+  }),
 });
 
 // Register cookie plugin

@@ -5,7 +5,15 @@ import {CoachChatSession} from '../../services/coaching/coachChat.ts';
 import {BioChatSession} from '../../services/bio/bioChat.ts';
 import {getSocketUser} from '../../utils/auth-helper.ts';
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim().replace(/\/$/, ''))
+  : [];
+
+const isOriginAllowed = (origin: string): boolean => {
+  if (allowedOrigins.length === 0) return true;
+  const normalizedOrigin = origin.trim().replace(/\/$/, '');
+  return allowedOrigins.includes(normalizedOrigin);
+};
 
 export default async function websocketRoutes(fastify: FastifyInstance): Promise<void> {
   fastify.get('/story-event', {websocket: true}, async (connection, req) => {
@@ -18,7 +26,7 @@ export default async function websocketRoutes(fastify: FastifyInstance): Promise
 
     if (!user) return;
 
-    if (allowedOrigins.length > 0 && !allowedOrigins.includes(origin)) {
+    if (!isOriginAllowed(origin)) {
       return socket.close(4003, 'Origin not allowed');
     }
 
@@ -70,7 +78,7 @@ export default async function websocketRoutes(fastify: FastifyInstance): Promise
 
     if (!user) return;
 
-    if (allowedOrigins.length > 0 && !allowedOrigins.includes(origin)) {
+    if (!isOriginAllowed(origin)) {
       return socket.close(4003, 'Origin not allowed');
     }
 
@@ -123,7 +131,7 @@ export default async function websocketRoutes(fastify: FastifyInstance): Promise
       return socket.close(4001, 'Missing user identifier');
     }
 
-    if (allowedOrigins.length > 0 && !allowedOrigins.includes(origin)) {
+    if (!isOriginAllowed(origin)) {
       return socket.close(4003, 'Origin not allowed');
     }
 
