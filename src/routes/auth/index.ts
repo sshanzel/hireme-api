@@ -27,7 +27,7 @@ const setAuthCookie = (reply: FastifyReply, token: string) => {
   reply.setCookie('token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
     path: '/',
     maxAge: TOKEN_MAX_AGE,
   });
