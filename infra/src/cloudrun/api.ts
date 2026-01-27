@@ -13,7 +13,7 @@ export const apiService = new gcp.cloudrunv2.Service(
     template: {
       serviceAccount: apiServiceAccount.email,
       scaling: {
-        minInstanceCount: 0,
+        minInstanceCount: 1,
         maxInstanceCount: apiMaxInstances,
       },
       timeout: '300s',
@@ -26,7 +26,7 @@ export const apiService = new gcp.cloudrunv2.Service(
               memory: '512Mi',
               cpu: '1',
             },
-            cpuIdle: false, // Keep CPU allocated for WebSocket
+            cpuIdle: true,
             startupCpuBoost: true,
           },
           envs: [
