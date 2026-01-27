@@ -26,7 +26,7 @@ export const apiService = new gcp.cloudrunv2.Service(
               memory: '512Mi',
               cpu: '1',
             },
-            cpuIdle: true,
+            cpuIdle: false,
             startupCpuBoost: true,
           },
           envs: [
