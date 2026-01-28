@@ -8,6 +8,7 @@ const requiredApis = [
   'pubsub.googleapis.com',
   'iam.googleapis.com',
   'cloudresourcemanager.googleapis.com',
+  'cloudscheduler.googleapis.com',
 ];
 
 export const enabledApis = requiredApis.map(

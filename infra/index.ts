@@ -12,6 +12,7 @@ import {
 import {apiService, apiUrl, workerService, workerUrl} from './src/cloudrun';
 import {createPubSubResources, topicNames} from './src/pubsub';
 import {cvUploadsBucket, bucketName} from './src/storage';
+import {dbWarmupJob} from './src/scheduler';
 
 // Create Pub/Sub resources with worker URL
 const pubsub = createPubSubResources(workerUrl);
@@ -39,6 +40,9 @@ export const outputs = {
 
   // Storage
   bucketName: bucketName,
+
+  // Scheduler
+  dbWarmupJob: dbWarmupJob.name,
 };
 
 // Export individual values for easy access

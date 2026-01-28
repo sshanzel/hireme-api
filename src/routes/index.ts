@@ -1,4 +1,6 @@
 import {FastifyInstance} from 'fastify';
+import {sql} from 'drizzle-orm';
+import {db} from '../db/index.ts';
 import authRoutes from './auth/index.ts';
 import cvRoutes from './cv/index.ts';
 import documentRoutes from './documents/index.ts';
@@ -8,7 +10,8 @@ import experiencesRoutes from './experiences/index.ts';
 import coachingRoutes from './coaching/index.ts';
 
 export default async function (fastify: FastifyInstance): Promise<void> {
-  fastify.get('/health', async (req, res) => {
+  fastify.get('/health', async () => {
+    await db.execute(sql`SELECT 1`);
     return {status: 'ok'};
   });
 
