@@ -31,19 +31,59 @@ function formatDate(date: Date): string {
   return date.toLocaleDateString('en-US', {month: 'short', year: 'numeric'});
 }
 
+function calculateDurationMonths(startDate: Date, endDate: Date | null): number {
+  const end = endDate || new Date();
+  // LinkedIn-style: inclusive of both start and end month
+  return (
+    (end.getFullYear() - startDate.getFullYear()) * 12 + (end.getMonth() - startDate.getMonth()) + 1
+  );
+}
+
+function formatDuration(months: number): string {
+  return `${months} month${months !== 1 ? 's' : ''}`;
+}
+
+function formatTotalExperience(months: number): string {
+  const years = months / 12;
+  if (years < 1) return `${months} months`;
+  return `${years.toFixed(1)} years (${months} months)`;
+}
+
 function formatExperienceTimeline(experiences: Experience[]): string {
   if (experiences.length === 0) return 'No experiences documented.';
 
-  return experiences
-    .map(exp => {
-      const dateRange = exp.endDate
-        ? `${formatDate(exp.startDate)} - ${formatDate(exp.endDate)}`
-        : `${formatDate(exp.startDate)} - Present`;
-      const org = exp.organization ? ` at ${exp.organization}` : '';
-      const type = exp.type.charAt(0).toUpperCase() + exp.type.slice(1);
-      return `- [${type}] ${exp.title}${org} (${dateRange})`;
-    })
-    .join('\n');
+  const workExperiences = experiences.filter(e => e.type === 'work');
+  const educationExperiences = experiences.filter(e => e.type === 'education');
+  const projectExperiences = experiences.filter(e => e.type === 'project');
+
+  const formatEntry = (exp: Experience) => {
+    const dateRange = exp.endDate
+      ? `${formatDate(exp.startDate)} - ${formatDate(exp.endDate)}`
+      : `${formatDate(exp.startDate)} - Present`;
+    const months = calculateDurationMonths(exp.startDate, exp.endDate);
+    const org = exp.organization ? ` at ${exp.organization}` : '';
+    return `- ${exp.title}${org} (${dateRange}) [${formatDuration(months)}]`;
+  };
+
+  const sections: string[] = [];
+
+  if (workExperiences.length > 0) {
+    const totalWorkMonths = workExperiences.reduce(
+      (sum, exp) => sum + calculateDurationMonths(exp.startDate, exp.endDate),
+      0,
+    );
+    sections.push(
+      `Work Experience:\n${workExperiences.map(formatEntry).join('\n')}\n\nTotal Work Experience: ${formatTotalExperience(totalWorkMonths)}`,
+    );
+  }
+  if (educationExperiences.length > 0) {
+    sections.push(`Education:\n${educationExperiences.map(formatEntry).join('\n')}`);
+  }
+  if (projectExperiences.length > 0) {
+    sections.push(`Projects:\n${projectExperiences.map(formatEntry).join('\n')}`);
+  }
+
+  return sections.join('\n\n');
 }
 
 async function getStoryExperienceMap(
@@ -126,7 +166,16 @@ For off-topic questions, respond: "I'd prefer to keep our conversation focused o
 Your career timeline:
 ${timeline}
 
-You can use the timeline above to answer time-based questions.
+You may use the timeline above to answer time-based questions.
+
+Do NOT estimate experience based on:
+- Career start year
+- Recent roles
+- Perceived seniority
+- Narrative judgment
+
+If an end date exists, the role has concluded.
+If no end date exists, the role is ongoing.
 
 Here is some relevant context to help you answer questions:
 
