@@ -4,7 +4,7 @@ import {zodResponseFormat} from 'openai/helpers/zod';
 import {eq, inArray, desc} from 'drizzle-orm';
 import {db} from '../../db/index.ts';
 import {storyTable, experienceTable, type Experience} from '../../db/schema/index.ts';
-import {searchProfile, ProfileSearchResult} from './search.ts';
+import {searchStories, ProfileSearchResult} from './search.ts';
 
 const DEFAULT_MODEL = 'gpt-4o-mini';
 
@@ -49,7 +49,18 @@ function formatTotalExperience(months: number): string {
   return `${years.toFixed(1)} years (${months} months)`;
 }
 
-function formatExperienceTimeline(experiences: Experience[]): string {
+function formatSearchTimeline(experiences: Experience[]): string {
+  return experiences
+    .filter(e => e.type === 'work')
+    .map(e => {
+      const org = e.organization ? ` at ${e.organization}` : '';
+      const end = e.endDate ? formatDate(e.endDate) : 'Present';
+      return `${e.title}${org} (${formatDate(e.startDate)} - ${end})`;
+    })
+    .join('; ');
+}
+
+function formatExperienceHistory(experiences: Experience[]): string {
   if (experiences.length === 0) return 'No experiences documented.';
 
   const workExperiences = experiences.filter(e => e.type === 'work');
@@ -62,7 +73,10 @@ function formatExperienceTimeline(experiences: Experience[]): string {
       : `${formatDate(exp.startDate)} - Present`;
     const months = calculateDurationMonths(exp.startDate, exp.endDate);
     const org = exp.organization ? ` at ${exp.organization}` : '';
-    return `- ${exp.title}${org} (${dateRange}) [${formatDuration(months)}]`;
+    const header = `### ${exp.title}${org}\n${dateRange} [${formatDuration(months)}]`;
+    const description = exp.description ? `\n${exp.description}` : '';
+    const skills = exp.skills?.length ? `\nSkills: ${exp.skills.join(', ')}` : '';
+    return `${header}${description}${skills}`;
   };
 
   const sections: string[] = [];
@@ -73,14 +87,14 @@ function formatExperienceTimeline(experiences: Experience[]): string {
       0,
     );
     sections.push(
-      `Work Experience:\n${workExperiences.map(formatEntry).join('\n')}\n\nTotal Work Experience: ${formatTotalExperience(totalWorkMonths)}`,
+      `## Work Experience\nTotal: ${formatTotalExperience(totalWorkMonths)}\n\n${workExperiences.map(formatEntry).join('\n\n')}`,
     );
   }
   if (educationExperiences.length > 0) {
-    sections.push(`Education:\n${educationExperiences.map(formatEntry).join('\n')}`);
+    sections.push(`## Education\n\n${educationExperiences.map(formatEntry).join('\n\n')}`);
   }
   if (projectExperiences.length > 0) {
-    sections.push(`Projects:\n${projectExperiences.map(formatEntry).join('\n')}`);
+    sections.push(`## Projects\n\n${projectExperiences.map(formatEntry).join('\n\n')}`);
   }
 
   return sections.join('\n\n');
@@ -109,40 +123,39 @@ async function getStoryExperienceMap(
   );
 }
 
-function formatContextItem(
-  c: ProfileSearchResult,
+function formatStoryContext(
+  story: ProfileSearchResult,
   experienceMap: Map<string, ExperienceInfo>,
 ): string {
-  if (c.type === 'story') {
-    const exp = experienceMap.get(c.sourceId);
-    if (exp) {
-      const expLabel = exp.organization ? `${exp.title} at ${exp.organization}` : exp.title;
-      return `[STORY - Related to: ${expLabel}] ${c.chunk}`;
-    }
+  const exp = experienceMap.get(story.sourceId);
+  if (exp) {
+    const expLabel = exp.organization ? `${exp.title} at ${exp.organization}` : exp.title;
+    return `[Related to: ${expLabel}]\n${story.chunk}`;
   }
-  return `[${c.type.toUpperCase()}] ${c.chunk}`;
+  return story.chunk;
 }
 
 function buildSystemPrompt(
   userName: string,
   experiences: Experience[],
-  context: ProfileSearchResult[],
+  stories: ProfileSearchResult[],
   experienceMap: Map<string, ExperienceInfo>,
 ): string {
-  const timeline = formatExperienceTimeline(experiences);
-  const formattedContext =
-    context.length > 0
-      ? context.map(c => formatContextItem(c, experienceMap)).join('\n\n')
-      : 'No relevant information found.';
+  const experienceHistory = formatExperienceHistory(experiences);
+  const formattedStories =
+    stories.length > 0
+      ? stories.map(s => formatStoryContext(s, experienceMap)).join('\n\n---\n\n')
+      : 'No relevant stories found.';
 
   return `You are ${userName}, responding to questions on your public profile page.
 Recruiters and hiring managers will ask you questions about your professional background.
+When asked for the first time, you can greet the user politely.
 
 Guidelines:
 - Speak in first person as yourself (${userName})
-- Answer based ONLY on the provided context about your experiences
+- Answer based on the experience history and relevant stories provided below
 - Be professional, personable, and authentic
-- If asked about something not in the context, politely say you don't have that documented yet
+- If asked about something not documented, politely say you don't have that documented yet
 - When relevant, mention specific companies, projects, or skills by name
 - Keep responses concise and conversational
 - You don't need to overly prettify the situation; just be clear and straightforward while adding the key points
@@ -153,6 +166,7 @@ Guidelines:
 - Separate different points into paragraphs for clarity
 - Focus on high signal details that showcase your skills and achievements
 - If you've already mentioned a specific story in this conversation, try to highlight different experiences or aspects
+- Never invent any details about your experiences that are not documented here
 
 Off-limits topics (politely redirect to professional discussion):
 - Personal details: salary, contact info, age, relationships, address
@@ -163,26 +177,23 @@ Off-limits topics (politely redirect to professional discussion):
 
 For off-topic questions, respond: "I'd prefer to keep our conversation focused on my professional background. Feel free to ask about my experience, skills, or projects."
 
-Your career timeline:
-${timeline}
+# Experience History
+${experienceHistory}
 
-You may use the timeline above to answer time-based questions.
+IMPORTANT - Total Experience Calculation:
+- The "Total" shown above is PRE-CALCULATED and ACCURATE - always use this number
+- Do NOT recalculate or estimate the total yourself
+- When asked about years of experience, round the pre-calculated total to the nearest whole year
+- Example: If Total shows "7.8 years (94 months)", respond with "approximately 8 years"
 
-Do NOT estimate experience based on:
-- Career start year
-- Recent roles
-- Perceived seniority
-- Narrative judgment
+Notes:
+- Use the experience history above to answer questions about roles, responsibilities, skills, and time-based queries
+- If an end date exists, the role has concluded; if no end date, the role is ongoing
+- Stories provide detailed examples and achievements from specific experiences
+- Reference stories to give concrete examples when answering questions
 
-If an end date exists, the role has concluded.
-If no end date exists, the role is ongoing.
-
-Terminologies that are probably field-specific but relevant to answer questions:
-- Techstack (Tech Stack, or Stack for Software Professionals): The combination of programming languages, frameworks, libraries, and tools used to build software applications.
-
-Here is some relevant context to help you answer questions:
-
-${formattedContext}
+# Relevant Stories
+${formattedStories}
 `;
 }
 
@@ -203,17 +214,20 @@ export async function generateProfileResponse(
     throw new Error('No user message found');
   }
 
-  // console.log('Generating profile response for user:', userId); // for debugging
   const experiences = await getUserExperiences(userId);
-  const timeline = formatExperienceTimeline(experiences);
-  const enrichedQuery = `${timeline}\n\nQuery: ${latestUserMessage.content}`;
-  const relevantContext = await searchProfile(enrichedQuery, userId, 5);
-  // console.log('Relevant context count:', relevantContext.length); // for debugging
-  const storyIds = relevantContext.filter(c => c.type === 'story').map(c => c.sourceId);
-  const experienceMap = await getStoryExperienceMap(storyIds, experiences);
 
-  const systemPrompt = buildSystemPrompt(userName, experiences, relevantContext, experienceMap);
-  // console.log('System prompt built. Generating response...'); // for debugging
+  const workExps = experiences.filter(e => e.type === 'work');
+  const totalMonths = workExps.reduce(
+    (sum, exp) => sum + calculateDurationMonths(exp.startDate, exp.endDate),
+    0,
+  );
+
+  const searchTimeline = formatSearchTimeline(experiences);
+  const enrichedQuery = `Timeline: ${searchTimeline}\n\nQuery: ${latestUserMessage.content}`;
+  const relevantStories = await searchStories(enrichedQuery, userId, 5);
+  const storyIds = relevantStories.map(s => s.sourceId);
+  const experienceMap = await getStoryExperienceMap(storyIds, experiences);
+  const systemPrompt = buildSystemPrompt(userName, experiences, relevantStories, experienceMap);
   const messages: OpenAI.ChatCompletionMessageParam[] = history.map(msg => ({
     role: msg.role,
     content: msg.content,
@@ -225,7 +239,6 @@ export async function generateProfileResponse(
     response_format: zodResponseFormat(ProfileResponseSchema, 'profile_response'),
   });
 
-  console.log('Response generated successfully.', result);
   const content = result.choices[0].message.content;
 
   if (!content) {
