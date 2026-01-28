@@ -194,8 +194,28 @@ export class BioChatSession {
     this.events.push({content, role, createdAt: event.createdAt});
   }
 
+  private get answeredHistory(): ProfileChatEventData[] {
+    // Filter out unanswered user messages (user message without following assistant response)
+    const answered: ProfileChatEventData[] = [];
+    for (let i = 0; i < this.events.length; i++) {
+      const current = this.events[i];
+      if (current.role === 'user') {
+        const next = this.events[i + 1];
+        if (next && next.role === 'assistant') {
+          answered.push(current, next);
+          i++; // Skip the assistant message we just added
+        }
+        // Skip user messages without a following assistant response
+      }
+    }
+    return answered;
+  }
+
   private async generateAndSaveResponse(): Promise<ProfileResponse> {
-    const response = await generateProfileResponse(this.events, this.userId, this.userName);
+    const currentUserMessage = this.events[this.events.length - 1];
+    const fullHistory = [...this.answeredHistory, currentUserMessage];
+
+    const response = await generateProfileResponse(fullHistory, this.userId, this.userName);
 
     try {
       await this.saveEvent(response.content, 'assistant');
@@ -227,16 +247,14 @@ export class BioChatSession {
       return;
     }
 
-    let response: ProfileResponse;
     try {
-      response = await this.generateAndSaveResponse();
+      const response = await this.generateAndSaveResponse();
+      this.sendResponse(response);
     } catch (err) {
       console.error('Failed to generate response:', err);
       this.sendError('Failed to generate response', ErrorCode.GenerationError);
       return;
     }
-
-    this.sendResponse(response);
   }
 
   async handleMessage(rawMessage: string): Promise<void> {
