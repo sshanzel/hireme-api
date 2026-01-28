@@ -125,6 +125,7 @@ export class BioChatSession {
 
   private send(message: OutgoingMessage): void {
     if (this.socket.readyState !== this.socket.OPEN) {
+      console.warn('Cannot send message, socket not open:', message.type);
       return;
     }
     this.socket.send(JSON.stringify(message));
@@ -258,6 +259,9 @@ export class BioChatSession {
           await this.handleChat(message.data);
           break;
       }
+    } catch (err) {
+      console.error('Unexpected error in handleMessage:', err);
+      this.sendError('An unexpected error occurred', ErrorCode.GenerationError);
     } finally {
       this.isProcessing = false;
     }
