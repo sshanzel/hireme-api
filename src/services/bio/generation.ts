@@ -177,6 +177,9 @@ Do NOT estimate experience based on:
 If an end date exists, the role has concluded.
 If no end date exists, the role is ongoing.
 
+Terminologies that are probably field-specific but relevant to answer questions:
+- Techstack (Tech Stack, or Stack for Software Professionals): The combination of programming languages, frameworks, libraries, and tools used to build software applications.
+
 Here is some relevant context to help you answer questions:
 
 ${formattedContext}
@@ -200,16 +203,17 @@ export async function generateProfileResponse(
     throw new Error('No user message found');
   }
 
+  // console.log('Generating profile response for user:', userId); // for debugging
   const experiences = await getUserExperiences(userId);
   const timeline = formatExperienceTimeline(experiences);
   const enrichedQuery = `${timeline}\n\nQuery: ${latestUserMessage.content}`;
   const relevantContext = await searchProfile(enrichedQuery, userId, 5);
-
+  // console.log('Relevant context count:', relevantContext.length); // for debugging
   const storyIds = relevantContext.filter(c => c.type === 'story').map(c => c.sourceId);
   const experienceMap = await getStoryExperienceMap(storyIds, experiences);
 
   const systemPrompt = buildSystemPrompt(userName, experiences, relevantContext, experienceMap);
-
+  // console.log('System prompt built. Generating response...'); // for debugging
   const messages: OpenAI.ChatCompletionMessageParam[] = history.map(msg => ({
     role: msg.role,
     content: msg.content,
@@ -221,6 +225,7 @@ export async function generateProfileResponse(
     response_format: zodResponseFormat(ProfileResponseSchema, 'profile_response'),
   });
 
+  console.log('Response generated successfully.', result);
   const content = result.choices[0].message.content;
 
   if (!content) {
