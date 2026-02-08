@@ -1,5 +1,15 @@
 import * as gcp from '@pulumi/gcp';
-import {region, projectId, apiMaxInstances, databaseUrl, jwtSecret, openaiApiKey, gcsBucketName, allowedOrigins, imageTag} from '../config';
+import {
+  region,
+  projectId,
+  apiMaxInstances,
+  databaseUrl,
+  jwtSecret,
+  openaiApiKey,
+  gcsBucketName,
+  allowedOrigins,
+  imageTag,
+} from '../config';
 import {apiServiceAccount} from '../iam';
 import {enabledApis} from '../apis';
 
@@ -13,7 +23,7 @@ export const apiService = new gcp.cloudrunv2.Service(
     template: {
       serviceAccount: apiServiceAccount.email,
       scaling: {
-        minInstanceCount: 1,
+        minInstanceCount: 0,
         maxInstanceCount: apiMaxInstances,
       },
       timeout: '300s',
@@ -61,7 +71,7 @@ export const apiService = new gcp.cloudrunv2.Service(
       ],
     },
   },
-  {dependsOn: enabledApis}
+  {dependsOn: enabledApis},
 );
 
 // Allow unauthenticated access (public API)
