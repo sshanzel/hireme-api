@@ -11,6 +11,10 @@ import coachingRoutes from './coaching/index.ts';
 
 export default async function (fastify: FastifyInstance): Promise<void> {
   fastify.get('/health', async () => {
+    return {status: 'ok'};
+  });
+
+  fastify.get('/health/db', async () => {
     await db.execute(sql`SELECT 1`);
     return {status: 'ok'};
   });
