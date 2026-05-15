@@ -72,7 +72,7 @@ export async function getFullProfile(userId: string) {
 }
 
 export async function getPublicProfile(identifier: string) {
-  return db.query.userTable.findFirst({
+  const profile = await db.query.userTable.findFirst({
     where: isUuid(identifier)
       ? or(eq(userTable.id, identifier), eq(userTable.username, identifier))
       : eq(userTable.username, identifier),
@@ -103,6 +103,18 @@ export async function getPublicProfile(identifier: string) {
       },
     },
   });
+
+  if (!profile) {
+    return null;
+  }
+
+  const {headline, summary, ...publicProfile} = profile;
+
+  return {
+    ...publicProfile,
+    title: headline,
+    bio: summary,
+  };
 }
 
 interface UpdateProfileParams {
